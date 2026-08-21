@@ -1,0 +1,47 @@
+"use client";
+
+import { useActionState } from "react";
+import { login } from "./actions";
+
+export default function AdminLoginPage() {
+  const [state, formAction, pending] = useActionState(login, undefined);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-6">
+      <div className="w-full max-w-sm">
+        <p className="text-center text-2xl font-extrabold text-brand">
+          Quarta Parede
+        </p>
+        <h1 className="mt-1 text-center text-sm text-neutral-400">
+          Painel de administração
+        </h1>
+
+        <form action={formAction} className="mt-8 space-y-4">
+          <div>
+            <label htmlFor="password" className="mb-1 block text-sm text-neutral-300">
+              Senha
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoFocus
+              className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-white outline-none focus:border-brand"
+            />
+          </div>
+
+          {state?.error && <p className="text-sm text-red-500">{state.error}</p>}
+
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+          >
+            {pending ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
