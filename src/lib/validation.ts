@@ -56,7 +56,10 @@ export const postSchema = z.object({
     .string()
     .trim()
     .min(1, "Informe o conteúdo.")
-    .max(20000, "Conteúdo muito longo (máx. 20000 caracteres)."),
+    // Content is JSON-encoded blocks (see src/lib/contentBlocks.ts) for posts
+    // built with the block editor, so this needs more headroom than a plain
+    // Markdown string would.
+    .max(60000, "Conteúdo muito longo (máx. 60000 caracteres)."),
   coverImageUrl: optionalUrl,
   coverImageAlt: z
     .string()

@@ -26,8 +26,8 @@ describe("postSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects content over 20000 characters", () => {
-    const result = postSchema.safeParse({ ...validPost, content: "a".repeat(20001) });
+  it("rejects content over 60000 characters", () => {
+    const result = postSchema.safeParse({ ...validPost, content: "a".repeat(60001) });
     expect(result.success).toBe(false);
   });
 

@@ -3,11 +3,6 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { User, Calendar, Folder, Clock, Eye } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import rehypeSlug from "rehype-slug";
-import rehypeHighlight from "rehype-highlight";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { categoryColor } from "@/lib/categoryColor";
@@ -16,25 +11,14 @@ import { readingTime } from "@/lib/readingTime";
 import { extractToc } from "@/lib/toc";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getSiteSettings } from "@/lib/siteSettings";
+import { parseContent, blocksToPlainMarkdown } from "@/lib/contentBlocks";
+import { BlockRenderer } from "@/components/BlockRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
 import { ShareButtons } from "@/components/ShareButtons";
 import { PostListCard } from "@/components/PostListCard";
 import { CommentForm } from "@/components/CommentForm";
 import { ReadingProgress } from "@/components/ReadingProgress";
 import { submitComment } from "./actions";
-
-// Allow <video>/<source> in post content (used for embedded clips) on top of
-// the default safe HTML allowlist. Everything else (scripts, event handlers,
-// iframes, etc.) is stripped by rehype-sanitize.
-const postContentSchema = {
-  ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), "video", "source"],
-  attributes: {
-    ...defaultSchema.attributes,
-    video: ["controls", "src", "poster", "width", "height", "muted", "loop"],
-    source: ["src", "type"],
-  },
-};
 
 export async function generateMetadata({
   params,
@@ -107,8 +91,10 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
 
   const siteUrl = getSiteUrl();
   const postUrl = `${siteUrl}/post/${post.slug}`;
-  const minutes = readingTime(post.content);
-  const toc = extractToc(post.content);
+  const blocks = parseContent(post.content);
+  const plainMarkdown = blocksToPlainMarkdown(blocks);
+  const minutes = readingTime(plainMarkdown);
+  const toc = extractToc(plainMarkdown);
   const publishedAt = post.publishedAt ?? post.createdAt;
 
   const jsonLd = {
@@ -192,17 +178,8 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
         <TableOfContents entries={toc} />
       </div>
 
-      <div className="prose prose-invert max-w-none prose-headings:font-bold prose-a:text-brand prose-video:rounded-lg prose-video:border prose-video:border-surface-border">
-        <ReactMarkdown
-          rehypePlugins={[
-            rehypeRaw,
-            [rehypeSanitize, postContentSchema],
-            rehypeSlug,
-            rehypeHighlight,
-          ]}
-        >
-          {post.content}
-        </ReactMarkdown>
+      <div className="mt-8">
+        <BlockRenderer blocks={blocks} />
       </div>
 
       <div className="mt-10 border-t border-surface-border pt-6">

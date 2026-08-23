@@ -6,13 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { postSchema, firstIssueMessage } from "@/lib/validation";
 import { saveUploadedImage } from "@/lib/upload";
+import { blocksToPlainMarkdown, parseContent } from "@/lib/contentBlocks";
+import { isAdminSessionValid } from "@/lib/adminSession";
 
 export type PostFormState = { error?: string } | undefined;
 
-/** Keeps the standalone PostSearch FTS5 table (see prisma/migrations) in sync. */
+/** Keeps the standalone PostSearch FTS5 table (see prisma/migrations) in sync.
+ * `content` may be a JSON block envelope (see src/lib/contentBlocks.ts), so
+ * it's flattened to plain text first — otherwise searches would only match
+ * literal JSON syntax instead of the words the author actually wrote. */
 async function syncPostSearch(post: { id: string; title: string; excerpt: string; content: string }) {
+  const searchableContent = blocksToPlainMarkdown(parseContent(post.content));
   await prisma.$executeRaw`DELETE FROM "PostSearch" WHERE postId = ${post.id}`;
-  await prisma.$executeRaw`INSERT INTO "PostSearch" (postId, title, excerpt, content) VALUES (${post.id}, ${post.title}, ${post.excerpt}, ${post.content})`;
+  await prisma.$executeRaw`INSERT INTO "PostSearch" (postId, title, excerpt, content) VALUES (${post.id}, ${post.title}, ${post.excerpt}, ${searchableContent})`;
 }
 
 async function removePostSearch(postId: string) {
@@ -229,4 +235,22 @@ export async function restorePostRevision(postId: string, revisionId: string) {
   revalidatePath("/");
   revalidatePath(`/post/${current.slug}`);
   return { success: true };
+}
+
+/** Uploads an image picked in the block editor's Gallery block and returns
+ * its public URL. Unlike the cover image (uploaded as part of the whole
+ * post form submission), gallery images are uploaded one at a time as
+ * they're added, so this needs its own action. */
+export async function uploadPostImage(formData: FormData): Promise<{ url?: string; error?: string }> {
+  if (!(await isAdminSessionValid())) return { error: "Não autenticado." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };
+
+  try {
+    const url = await saveUploadedImage(file);
+    return { url };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Erro ao salvar imagem." };
+  }
 }
