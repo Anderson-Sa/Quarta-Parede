@@ -10,6 +10,15 @@ datasource db {
   provider = "sqlite"
 }
 
+model SiteSettings {
+  id         String   @id @default(cuid())
+  siteName   String   @default("Quarta Parede")
+  slogan     String   @default("Notícias e novidades do universo geek.")
+  logoUrl    String?
+  footerText String   @default("Quarta Parede — notícias do universo geek: cinema, animes, séries e games.")
+  updatedAt  DateTime @updatedAt
+}
+
 model Category {
   id    String @id @default(cuid())
   name  String

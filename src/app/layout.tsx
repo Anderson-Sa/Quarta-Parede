@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getSiteSettings } from "@/lib/siteSettings";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,14 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Quarta Parede",
-    template: "%s · Quarta Parede",
-  },
-  description:
-    "Notícias e novidades do universo geek: cinema, animes, séries e games.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: {
+      default: settings.siteName,
+      template: `%s · ${settings.siteName}`,
+    },
+    description: settings.footerText,
+  };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
