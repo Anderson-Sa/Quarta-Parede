@@ -9,6 +9,16 @@ import { saveUploadedImage } from "@/lib/upload";
 
 export type PostFormState = { error?: string } | undefined;
 
+/** Keeps the standalone PostSearch FTS5 table (see prisma/migrations) in sync. */
+async function syncPostSearch(post: { id: string; title: string; excerpt: string; content: string }) {
+  await prisma.$executeRaw`DELETE FROM "PostSearch" WHERE postId = ${post.id}`;
+  await prisma.$executeRaw`INSERT INTO "PostSearch" (postId, title, excerpt, content) VALUES (${post.id}, ${post.title}, ${post.excerpt}, ${post.content})`;
+}
+
+async function removePostSearch(postId: string) {
+  await prisma.$executeRaw`DELETE FROM "PostSearch" WHERE postId = ${postId}`;
+}
+
 function readPostInput(formData: FormData) {
   return {
     title: String(formData.get("title") ?? ""),
@@ -85,6 +95,8 @@ export async function createPost(
     },
   });
 
+  await syncPostSearch(post);
+
   revalidatePath("/admin/posts");
   revalidatePath("/");
   redirect(`/admin/posts/${post.id}`);
@@ -119,6 +131,29 @@ export async function updatePost(
     ? new Date(publishedAt ?? current.publishedAt ?? Date.now())
     : null;
 
+  // Snapshot the previous content before overwriting, so it can be restored
+  // later. Only meaningful fields (title/excerpt/content) are versioned.
+  await prisma.postRevision.create({
+    data: {
+      postId: id,
+      title: current.title,
+      excerpt: current.excerpt,
+      content: current.content,
+    },
+  });
+  // Keep at most the 20 most recent revisions per post.
+  const staleRevisions = await prisma.postRevision.findMany({
+    where: { postId: id },
+    orderBy: { createdAt: "desc" },
+    skip: 20,
+    select: { id: true },
+  });
+  if (staleRevisions.length > 0) {
+    await prisma.postRevision.deleteMany({
+      where: { id: { in: staleRevisions.map((revision) => revision.id) } },
+    });
+  }
+
   await prisma.post.update({
     where: { id },
     data: {
@@ -134,6 +169,8 @@ export async function updatePost(
     },
   });
 
+  await syncPostSearch({ id, title, excerpt, content });
+
   revalidatePath("/admin/posts");
   revalidatePath("/");
   revalidatePath(`/post/${current.slug}`);
@@ -142,7 +179,54 @@ export async function updatePost(
 
 export async function deletePost(id: string) {
   const post = await prisma.post.delete({ where: { id } });
+  await removePostSearch(id);
   revalidatePath("/admin/posts");
   revalidatePath("/");
   revalidatePath(`/post/${post.slug}`);
+}
+
+export async function deletePosts(ids: string[]) {
+  if (ids.length === 0) return;
+  const posts = await prisma.post.findMany({ where: { id: { in: ids } }, select: { id: true, slug: true } });
+  await prisma.post.deleteMany({ where: { id: { in: ids } } });
+  await Promise.all(posts.map((post) => removePostSearch(post.id)));
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+  for (const post of posts) revalidatePath(`/post/${post.slug}`);
+}
+
+export async function restorePostRevision(postId: string, revisionId: string) {
+  const revision = await prisma.postRevision.findUnique({ where: { id: revisionId } });
+  if (!revision || revision.postId !== postId) return { error: "Revisão não encontrada." };
+
+  const current = await prisma.post.findUnique({ where: { id: postId } });
+  if (!current) return { error: "Post não encontrado." };
+
+  // Snapshot the current state too, so restoring is itself reversible.
+  await prisma.postRevision.create({
+    data: {
+      postId,
+      title: current.title,
+      excerpt: current.excerpt,
+      content: current.content,
+    },
+  });
+
+  await prisma.post.update({
+    where: { id: postId },
+    data: { title: revision.title, excerpt: revision.excerpt, content: revision.content },
+  });
+
+  await syncPostSearch({
+    id: postId,
+    title: revision.title,
+    excerpt: revision.excerpt,
+    content: revision.content,
+  });
+
+  revalidatePath("/admin/posts");
+  revalidatePath(`/admin/posts/${postId}`);
+  revalidatePath("/");
+  revalidatePath(`/post/${current.slug}`);
+  return { success: true };
 }

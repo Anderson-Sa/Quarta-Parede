@@ -1,44 +1,51 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
+import { prisma } from "@/lib/prisma";
 import { checkRateLimit, formatRetryAfter } from "./rateLimit";
 
+const testKeys: string[] = [];
+function uniqueKey(prefix: string) {
+  const key = `${prefix}-${Math.random()}`;
+  testKeys.push(key);
+  return key;
+}
+
+afterAll(async () => {
+  await prisma.rateLimitBucket.deleteMany({ where: { key: { in: testKeys } } });
+});
+
 describe("checkRateLimit", () => {
-  it("allows attempts under the limit", () => {
-    const key = `test-${Math.random()}`;
-    expect(checkRateLimit(key, 3, 1000).allowed).toBe(true);
-    expect(checkRateLimit(key, 3, 1000).allowed).toBe(true);
-    expect(checkRateLimit(key, 3, 1000).allowed).toBe(true);
+  it("allows attempts under the limit", async () => {
+    const key = uniqueKey("test");
+    expect((await checkRateLimit(key, 3, 1000)).allowed).toBe(true);
+    expect((await checkRateLimit(key, 3, 1000)).allowed).toBe(true);
+    expect((await checkRateLimit(key, 3, 1000)).allowed).toBe(true);
   });
 
-  it("blocks attempts once the max is exceeded", () => {
-    const key = `test-${Math.random()}`;
-    checkRateLimit(key, 2, 1000);
-    checkRateLimit(key, 2, 1000);
-    const result = checkRateLimit(key, 2, 1000);
+  it("blocks attempts once the max is exceeded", async () => {
+    const key = uniqueKey("test");
+    await checkRateLimit(key, 2, 1000);
+    await checkRateLimit(key, 2, 1000);
+    const result = await checkRateLimit(key, 2, 1000);
     expect(result.allowed).toBe(false);
     if (!result.allowed) {
       expect(result.retryAfterSeconds).toBeGreaterThan(0);
     }
   });
 
-  it("resets the bucket after the window expires", () => {
-    const key = `test-${Math.random()}`;
-    vi.useFakeTimers();
-    try {
-      checkRateLimit(key, 1, 1000);
-      expect(checkRateLimit(key, 1, 1000).allowed).toBe(false);
-      vi.advanceTimersByTime(1001);
-      expect(checkRateLimit(key, 1, 1000).allowed).toBe(true);
-    } finally {
-      vi.useRealTimers();
-    }
+  it("resets the bucket after the window expires", async () => {
+    const key = uniqueKey("test");
+    await checkRateLimit(key, 1, 200);
+    expect((await checkRateLimit(key, 1, 200)).allowed).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect((await checkRateLimit(key, 1, 200)).allowed).toBe(true);
   });
 
-  it("tracks separate keys independently", () => {
-    const keyA = `a-${Math.random()}`;
-    const keyB = `b-${Math.random()}`;
-    checkRateLimit(keyA, 1, 1000);
-    expect(checkRateLimit(keyA, 1, 1000).allowed).toBe(false);
-    expect(checkRateLimit(keyB, 1, 1000).allowed).toBe(true);
+  it("tracks separate keys independently", async () => {
+    const keyA = uniqueKey("a");
+    const keyB = uniqueKey("b");
+    await checkRateLimit(keyA, 1, 1000);
+    expect((await checkRateLimit(keyA, 1, 1000)).allowed).toBe(false);
+    expect((await checkRateLimit(keyB, 1, 1000)).allowed).toBe(true);
   });
 });
 

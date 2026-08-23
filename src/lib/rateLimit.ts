@@ -1,39 +1,46 @@
 import { headers } from "next/headers";
-
-type Bucket = { count: number; resetAt: number };
-
-const buckets = new Map<string, Bucket>();
+import { prisma } from "@/lib/prisma";
 
 export type RateLimitResult =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds: number };
 
 /**
- * Limitador em memória por processo. Suficiente para bloquear força bruta em
- * uma única instância; não é compartilhado entre múltiplas instâncias/regiões
- * em produção (nesse caso, considere um store compartilhado como Redis).
+ * Limitador persistido no SQLite (tabela RateLimitBucket). Ao contrário de um
+ * Map em memória, sobrevive a reinícios/deploys e é compartilhado entre
+ * instâncias que apontam para o mesmo banco.
  */
-export function checkRateLimit(key: string, maxAttempts: number, windowMs: number): RateLimitResult {
+export async function checkRateLimit(
+  key: string,
+  maxAttempts: number,
+  windowMs: number,
+): Promise<RateLimitResult> {
   const now = Date.now();
 
-  if (buckets.size > 50_000) {
-    for (const [bucketKey, bucket] of buckets) {
-      if (bucket.resetAt < now) buckets.delete(bucketKey);
-    }
+  // Limpeza oportunista de buckets expirados, sem bloquear a resposta.
+  if (Math.random() < 0.01) {
+    prisma.rateLimitBucket.deleteMany({ where: { resetAt: { lt: new Date(now) } } }).catch(() => {});
   }
 
-  const bucket = buckets.get(key);
+  const bucket = await prisma.rateLimitBucket.findUnique({ where: { key } });
 
-  if (!bucket || bucket.resetAt < now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
+  if (!bucket || bucket.resetAt.getTime() < now) {
+    await prisma.rateLimitBucket.upsert({
+      where: { key },
+      create: { key, count: 1, resetAt: new Date(now + windowMs) },
+      update: { count: 1, resetAt: new Date(now + windowMs) },
+    });
     return { allowed: true };
   }
 
   if (bucket.count >= maxAttempts) {
-    return { allowed: false, retryAfterSeconds: Math.ceil((bucket.resetAt - now) / 1000) };
+    return { allowed: false, retryAfterSeconds: Math.ceil((bucket.resetAt.getTime() - now) / 1000) };
   }
 
-  bucket.count += 1;
+  await prisma.rateLimitBucket.update({
+    where: { key },
+    data: { count: { increment: 1 } },
+  });
   return { allowed: true };
 }
 

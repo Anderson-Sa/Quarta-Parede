@@ -21,3 +21,25 @@ export async function deleteComment(id: string) {
   revalidatePath("/admin/comentarios");
   revalidatePath(`/post/${comment.post.slug}`);
 }
+
+export async function approveComments(ids: string[]) {
+  if (ids.length === 0) return;
+  const comments = await prisma.comment.findMany({
+    where: { id: { in: ids } },
+    select: { post: { select: { slug: true } } },
+  });
+  await prisma.comment.updateMany({ where: { id: { in: ids } }, data: { approved: true } });
+  revalidatePath("/admin/comentarios");
+  for (const comment of comments) revalidatePath(`/post/${comment.post.slug}`);
+}
+
+export async function deleteComments(ids: string[]) {
+  if (ids.length === 0) return;
+  const comments = await prisma.comment.findMany({
+    where: { id: { in: ids } },
+    select: { post: { select: { slug: true } } },
+  });
+  await prisma.comment.deleteMany({ where: { id: { in: ids } } });
+  revalidatePath("/admin/comentarios");
+  for (const comment of comments) revalidatePath(`/post/${comment.post.slug}`);
+}

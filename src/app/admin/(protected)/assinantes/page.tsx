@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { EmptyState } from "@/components/admin/EmptyState";
+import { isNewsletterConfigured } from "@/lib/newsletter";
+import { SendDigestButton } from "./SendDigestButton";
 
 export default async function AssinantesPage() {
   const subscribers = await prisma.subscriber.findMany({
@@ -14,7 +16,10 @@ export default async function AssinantesPage() {
       <PageHeader
         title="Assinantes da newsletter"
         actions={
-          <span className="text-sm text-foreground/60">{subscribers.length} inscritos</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-foreground/60">{subscribers.length} inscritos</span>
+            <SendDigestButton configured={isNewsletterConfigured()} />
+          </div>
         }
       />
 

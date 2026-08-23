@@ -11,7 +11,7 @@ const WINDOW_MS = 15 * 60 * 1000;
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const ip = await getClientIp();
-  const rateLimit = checkRateLimit(`admin-login:${ip}`, MAX_ATTEMPTS, WINDOW_MS);
+  const rateLimit = await checkRateLimit(`admin-login:${ip}`, MAX_ATTEMPTS, WINDOW_MS);
   if (!rateLimit.allowed) {
     return {
       error: `Muitas tentativas. Tente novamente em ${formatRetryAfter(rateLimit.retryAfterSeconds)}.`,

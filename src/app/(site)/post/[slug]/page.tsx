@@ -20,6 +20,7 @@ import { TableOfContents } from "@/components/TableOfContents";
 import { ShareButtons } from "@/components/ShareButtons";
 import { PostListCard } from "@/components/PostListCard";
 import { CommentForm } from "@/components/CommentForm";
+import { ReadingProgress } from "@/components/ReadingProgress";
 import { submitComment } from "./actions";
 
 // Allow <video>/<source> in post content (used for embedded clips) on top of
@@ -42,6 +43,9 @@ export async function generateMetadata({
   const post = await prisma.post.findUnique({ where: { slug } });
   if (!post) return {};
 
+  // Omit the `images` key entirely (rather than setting it to undefined)
+  // when there's no cover image, so Next.js falls back to the file-convention
+  // opengraph-image.tsx in this same route segment instead of no image at all.
   const images = post.coverImageUrl ? [post.coverImageUrl] : undefined;
 
   return {
@@ -54,13 +58,13 @@ export async function generateMetadata({
       url: `/post/${post.slug}`,
       publishedTime: (post.publishedAt ?? post.createdAt).toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
-      images,
+      ...(images ? { images } : {}),
     },
     twitter: {
       card: images ? "summary_large_image" : "summary",
       title: post.title,
       description: post.excerpt,
-      images,
+      ...(images ? { images } : {}),
     },
   };
 }
@@ -85,7 +89,16 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
     categoryColor(post.category.slug),
     getSiteSettings(),
     prisma.post.findMany({
-      where: { ...publicPostWhere(), categoryId: post.categoryId, id: { not: post.id } },
+      where: {
+        ...publicPostWhere(),
+        id: { not: post.id },
+        OR: [
+          { categoryId: post.categoryId },
+          ...(post.tags.length > 0
+            ? [{ tags: { some: { id: { in: post.tags.map((tag) => tag.id) } } } }]
+            : []),
+        ],
+      },
       orderBy: { publishedAt: "desc" },
       include: { category: true },
       take: 3,
@@ -113,6 +126,7 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
 
   return (
     <article>
+      <ReadingProgress />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

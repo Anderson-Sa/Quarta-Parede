@@ -11,7 +11,7 @@ export async function subscribeNewsletter(
   formData: FormData,
 ): Promise<SubscribeFormState> {
   const ip = await getClientIp();
-  const rateLimit = checkRateLimit(`subscribe:${ip}`, 5, 60 * 60 * 1000);
+  const rateLimit = await checkRateLimit(`subscribe:${ip}`, 5, 60 * 60 * 1000);
   if (!rateLimit.allowed) {
     return { error: "Muitas tentativas. Tente novamente mais tarde." };
   }

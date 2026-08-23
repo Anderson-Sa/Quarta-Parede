@@ -5,13 +5,21 @@ type PaginationProps = {
   basePath: string;
   currentPage: number;
   totalPages: number;
+  /** Extra query params to preserve across page links (e.g. active filters). */
+  query?: Record<string, string | undefined>;
 };
 
-function pageHref(basePath: string, page: number) {
-  return page <= 1 ? basePath : `${basePath}?page=${page}`;
+function pageHref(basePath: string, page: number, query?: Record<string, string | undefined>) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value) params.set(key, value);
+  }
+  if (page > 1) params.set("page", String(page));
+  const qs = params.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
 }
 
-export function Pagination({ basePath, currentPage, totalPages }: PaginationProps) {
+export function Pagination({ basePath, currentPage, totalPages, query }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const hasPrev = currentPage > 1;
@@ -24,7 +32,7 @@ export function Pagination({ basePath, currentPage, totalPages }: PaginationProp
     >
       {hasPrev ? (
         <Link
-          href={pageHref(basePath, currentPage - 1)}
+          href={pageHref(basePath, currentPage - 1, query)}
           className="rounded-md border border-surface-border px-3 py-1.5 font-medium hover:border-brand hover:text-brand"
         >
           Anterior
@@ -41,7 +49,7 @@ export function Pagination({ basePath, currentPage, totalPages }: PaginationProp
 
       {hasNext ? (
         <Link
-          href={pageHref(basePath, currentPage + 1)}
+          href={pageHref(basePath, currentPage + 1, query)}
           className="rounded-md border border-surface-border px-3 py-1.5 font-medium hover:border-brand hover:text-brand"
         >
           Próxima

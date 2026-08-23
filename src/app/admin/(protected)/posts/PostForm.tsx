@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
-import { ImageOff } from "lucide-react";
+import { Bold, Code, Heading2, ImageOff, ImagePlus, Italic, Link2 } from "lucide-react";
 import { AdminCard } from "@/components/admin/AdminCard";
 import type { PostFormState } from "./actions";
 
@@ -25,6 +25,7 @@ const labelClass = "mb-1.5 block text-sm font-medium text-foreground/70";
 
 type Category = { id: string; name: string };
 type Tag = { id: string; name: string };
+type ToolbarAction = "bold" | "italic" | "heading" | "link" | "image" | "code";
 
 type Post = {
   title: string;
@@ -62,10 +63,100 @@ export function PostForm({
   const [content, setContent] = useState(post?.content ?? "");
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(post?.coverImageUrl ?? "");
+  const [dirty, setDirty] = useState(false);
   const postedTagIds = new Set(post?.tags.map((tag) => tag.id));
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const wasPending = useRef(false);
+
+  // Warn on tab close/refresh if there are unsaved changes. Doesn't catch
+  // in-app client-side navigation (e.g. clicking a sidebar link).
+  useEffect(() => {
+    if (!dirty) return;
+    function handler(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  // A submission that finishes without an error means it was saved: clear
+  // the dirty flag. (createPost redirects away entirely on success, so this
+  // mainly matters for updatePost.)
+  useEffect(() => {
+    if (wasPending.current && !pending && !state?.error) setDirty(false);
+    wasPending.current = pending;
+  }, [pending, state]);
+
+  function insertAroundSelection(before: string, after: string, placeholder: string) {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end) || placeholder;
+    const next = content.slice(0, start) + before + selected + after + content.slice(end);
+    setContent(next);
+    setDirty(true);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursorStart = start + before.length;
+      textarea.setSelectionRange(cursorStart, cursorStart + selected.length);
+    });
+  }
+
+  function insertLinePrefix(prefix: string) {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const lineStart = content.lastIndexOf("\n", start - 1) + 1;
+    const next = content.slice(0, lineStart) + prefix + content.slice(lineStart);
+    setContent(next);
+    setDirty(true);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const pos = start + prefix.length;
+      textarea.setSelectionRange(pos, pos);
+    });
+  }
+
+  function runToolbarAction(action: ToolbarAction) {
+    switch (action) {
+      case "bold":
+        insertAroundSelection("**", "**", "negrito");
+        break;
+      case "italic":
+        insertAroundSelection("_", "_", "itálico");
+        break;
+      case "heading":
+        insertLinePrefix("## ");
+        break;
+      case "link":
+        insertAroundSelection("[", "](https://)", "texto do link");
+        break;
+      case "image":
+        insertAroundSelection("![", "](https://)", "descrição da imagem");
+        break;
+      case "code":
+        insertAroundSelection("`", "`", "código");
+        break;
+    }
+  }
+
+  const toolbarButtons: { label: string; icon: typeof Bold; action: ToolbarAction }[] = [
+    { label: "Negrito", icon: Bold, action: "bold" },
+    { label: "Itálico", icon: Italic, action: "italic" },
+    { label: "Título", icon: Heading2, action: "heading" },
+    { label: "Link", icon: Link2, action: "link" },
+    { label: "Imagem", icon: ImagePlus, action: "image" },
+    { label: "Código", icon: Code, action: "code" },
+  ];
 
   return (
-    <form action={formAction} className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_320px]">
+    <form
+      action={formAction}
+      onChange={() => setDirty(true)}
+      className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_320px]"
+    >
       <div className="space-y-5">
         <AdminCard>
           <div>
@@ -110,10 +201,25 @@ export function PostForm({
                 {showPreview ? "Ocultar preview" : "Mostrar preview"}
               </button>
             </div>
+            <div className="mb-2 flex flex-wrap gap-1">
+              {toolbarButtons.map(({ label, icon: Icon, action }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => runToolbarAction(action)}
+                  title={label}
+                  aria-label={label}
+                  className="inline-flex items-center justify-center rounded-md border border-surface-border p-1.5 text-foreground/60 transition-colors hover:border-brand hover:text-brand"
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
             <div className={showPreview ? "grid grid-cols-2 gap-3" : ""}>
               <textarea
                 id="content"
                 name="content"
+                ref={contentRef}
                 required
                 rows={20}
                 maxLength={20000}

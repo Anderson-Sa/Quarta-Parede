@@ -20,7 +20,7 @@ export async function submitComment(
   }
 
   const ip = await getClientIp();
-  const rateLimit = checkRateLimit(`comment:${ip}`, 5, 10 * 60 * 1000);
+  const rateLimit = await checkRateLimit(`comment:${ip}`, 5, 10 * 60 * 1000);
   if (!rateLimit.allowed) {
     return { error: "Muitos comentários em pouco tempo. Tente novamente mais tarde." };
   }

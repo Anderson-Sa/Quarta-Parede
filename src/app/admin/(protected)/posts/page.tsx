@@ -1,29 +1,58 @@
 import Link from "next/link";
 import { Plus, FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/format";
+import type { Prisma } from "@/generated/prisma/client";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/admin/PageHeader";
-import { Badge } from "@/components/admin/Badge";
 import { EmptyState } from "@/components/admin/EmptyState";
+import { PostsTable } from "./PostsTable";
 
 const PAGE_SIZE = 20;
 
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function PostsPage({ searchParams }: PageProps<"/admin/posts">) {
-  const { page: pageParam } = await searchParams;
-  const requestedPage = Number(Array.isArray(pageParam) ? pageParam[0] : pageParam);
+  const params = await searchParams;
+  const requestedPage = Number(firstValue(params.page));
   const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
-  const totalPosts = await prisma.post.count();
+  const q = (firstValue(params.q) ?? "").trim();
+  const categoryId = firstValue(params.category) ?? "";
+  const status = firstValue(params.status) ?? "";
+
+  const where: Prisma.PostWhereInput = {};
+  if (q) where.title = { contains: q };
+  if (categoryId) where.categoryId = categoryId;
+  if (status === "publicado") {
+    where.published = true;
+    where.OR = [{ publishedAt: null }, { publishedAt: { lte: new Date() } }];
+  } else if (status === "agendado") {
+    where.published = true;
+    where.publishedAt = { gt: new Date() };
+  } else if (status === "rascunho") {
+    where.published = false;
+  }
+
+  const [totalPosts, categories] = await Promise.all([
+    prisma.post.count({ where }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+  ]);
   const totalPages = Math.max(1, Math.ceil(totalPosts / PAGE_SIZE));
   const page = Math.min(currentPage, totalPages);
 
   const posts = await prisma.post.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: { category: true },
     skip: (page - 1) * PAGE_SIZE,
     take: PAGE_SIZE,
   });
+
+  const activeFilters = { q: q || undefined, category: categoryId || undefined, status: status || undefined };
+  const inputClass =
+    "w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-brand";
 
   return (
     <div>
@@ -40,49 +69,70 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
         }
       />
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
+      <form
+        method="GET"
+        className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-surface-border bg-surface-muted p-4"
+      >
+        <div className="min-w-[200px] flex-1">
+          <label htmlFor="q" className="mb-1.5 block text-xs font-medium text-foreground/60">
+            Buscar por título
+          </label>
+          <input id="q" name="q" defaultValue={q} placeholder="Título..." className={inputClass} />
+        </div>
+        <div className="min-w-[160px]">
+          <label htmlFor="category" className="mb-1.5 block text-xs font-medium text-foreground/60">
+            Categoria
+          </label>
+          <select id="category" name="category" defaultValue={categoryId} className={inputClass}>
+            <option value="">Todas</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[160px]">
+          <label htmlFor="status" className="mb-1.5 block text-xs font-medium text-foreground/60">
+            Status
+          </label>
+          <select id="status" name="status" defaultValue={status} className={inputClass}>
+            <option value="">Todos</option>
+            <option value="publicado">Publicado</option>
+            <option value="agendado">Agendado</option>
+            <option value="rascunho">Rascunho</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+        >
+          Filtrar
+        </button>
+        {(q || categoryId || status) && (
+          <Link
+            href="/admin/posts"
+            className="rounded-md border border-surface-border px-4 py-2 text-sm font-medium text-foreground/60 transition-colors hover:text-foreground"
+          >
+            Limpar
+          </Link>
+        )}
+      </form>
+
+      <div className="mt-6">
         {posts.length === 0 ? (
-          <EmptyState icon={FileText} message="Nenhum post cadastrado ainda." />
+          <div className="overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
+            <EmptyState
+              icon={FileText}
+              message={q || categoryId || status ? "Nenhum post encontrado com esses filtros." : "Nenhum post cadastrado ainda."}
+            />
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/40">
-              <tr>
-                <th className="px-4 py-3.5 font-semibold">Título</th>
-                <th className="px-4 py-3.5 font-semibold">Categoria</th>
-                <th className="px-4 py-3.5 font-semibold">Status</th>
-                <th className="px-4 py-3.5 font-semibold">Criado em</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-border">
-              {posts.map((post) => (
-                <tr key={post.id} className="transition-colors hover:bg-white/[0.03]">
-                  <td className="px-4 py-3.5">
-                    <Link
-                      href={`/admin/posts/${post.id}`}
-                      className="font-medium text-foreground hover:text-brand"
-                    >
-                      {post.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3.5 text-foreground/60">{post.category.name}</td>
-                  <td className="px-4 py-3.5">
-                    {post.published && post.publishedAt && post.publishedAt > new Date() ? (
-                      <Badge tone="info">Agendado</Badge>
-                    ) : post.published ? (
-                      <Badge tone="success">Publicado</Badge>
-                    ) : (
-                      <Badge tone="neutral">Rascunho</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-foreground/60">{formatDate(post.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <PostsTable posts={posts} />
         )}
       </div>
 
-      <Pagination basePath="/admin/posts" currentPage={page} totalPages={totalPages} />
+      <Pagination basePath="/admin/posts" currentPage={page} totalPages={totalPages} query={activeFilters} />
     </div>
   );
 }
