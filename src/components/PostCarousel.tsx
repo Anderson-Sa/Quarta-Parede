@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { colorAt } from "@/lib/categoryPalette";
 
@@ -10,6 +11,7 @@ type CarouselPost = {
   slug: string;
   title: string;
   coverImageUrl: string | null;
+  coverImageAlt: string | null;
   category: { name: string; slug: string };
 };
 
@@ -45,11 +47,13 @@ export function PostCarousel({
             >
               <div className="relative aspect-video w-full overflow-hidden">
                 {post.coverImageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={post.coverImageUrl}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    alt={post.coverImageAlt ?? ""}
+                    fill
+                    unoptimized
+                    sizes="224px"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 )}
                 <span

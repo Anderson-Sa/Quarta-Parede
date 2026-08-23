@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import type { Post, Category } from "@/generated/prisma/client";
 
@@ -15,11 +16,13 @@ export function FeaturedPostCard({
       className={`group relative block overflow-hidden rounded-lg border border-surface-border bg-surface-muted ${className}`}
     >
       {post.coverImageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={post.coverImageUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          alt={post.coverImageAlt ?? ""}
+          fill
+          unoptimized
+          sizes="(max-width: 640px) 100vw, 66vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

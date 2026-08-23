@@ -45,6 +45,9 @@ next-env.d.ts
 *.db
 *.db-journal
 
+# user-uploaded images (see src/lib/upload.ts)
+/public/uploads
+
 # generated prisma client
 /src/generated/prisma
 

@@ -28,6 +28,19 @@ const optionalUrl = z
     }
   }, "URL inválida (use http://, https:// ou data:image/...).");
 
+/**
+ * Optional HTML datetime-local value ("YYYY-MM-DDTHH:mm"), used to schedule a
+ * post's publishedAt. Empty string means "not provided" (-> undefined, which
+ * falls back to "now" when the post is published).
+ */
+const optionalDateTimeLocal = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(""))
+  .transform((value) => (value ? value : undefined))
+  .refine((value) => value === undefined || !Number.isNaN(Date.parse(value)), "Data inválida.");
+
 export const postSchema = z.object({
   title: z
     .string()
@@ -45,8 +58,20 @@ export const postSchema = z.object({
     .min(1, "Informe o conteúdo.")
     .max(20000, "Conteúdo muito longo (máx. 20000 caracteres)."),
   coverImageUrl: optionalUrl,
+  coverImageAlt: z
+    .string()
+    .trim()
+    .max(300, "Texto alternativo muito longo (máx. 300 caracteres).")
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : undefined)),
   categoryId: z.string().trim().min(1, "Selecione uma categoria."),
+  tagIds: z
+    .array(z.string().trim().min(1))
+    .max(20, "Selecione no máximo 20 tags.")
+    .default([]),
   published: z.boolean(),
+  publishedAt: optionalDateTimeLocal,
 });
 
 export const categorySchema = z.object({
@@ -55,6 +80,42 @@ export const categorySchema = z.object({
     .trim()
     .min(1, "Informe um nome.")
     .max(100, "Nome muito longo (máx. 100 caracteres)."),
+});
+
+export const tagSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Informe um nome.")
+    .max(50, "Nome muito longo (máx. 50 caracteres)."),
+});
+
+export const commentSchema = z.object({
+  authorName: z
+    .string()
+    .trim()
+    .min(1, "Informe seu nome.")
+    .max(100, "Nome muito longo (máx. 100 caracteres)."),
+  authorEmail: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : undefined))
+    .refine(
+      (value) => value === undefined || z.email().safeParse(value).success,
+      "E-mail inválido.",
+    ),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Escreva um comentário.")
+    .max(2000, "Comentário muito longo (máx. 2000 caracteres)."),
+});
+
+export const subscriberSchema = z.object({
+  email: z.email("E-mail inválido.").trim().max(200),
 });
 
 export const siteSettingsSchema = z.object({

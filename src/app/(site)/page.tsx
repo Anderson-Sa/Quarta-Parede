@@ -3,11 +3,18 @@ import { FeaturedPostCard } from "@/components/FeaturedPostCard";
 import { PostListCard } from "@/components/PostListCard";
 import { PostCarousel } from "@/components/PostCarousel";
 import { getCategories } from "@/lib/categories";
+import { publicPostWhere } from "@/lib/publicPosts";
+
+// The home page is statically generated and only re-rendered on-demand (via
+// revalidatePath in admin actions). Scheduled posts become publicly visible
+// purely by wall-clock time passing though, with no action to trigger that
+// revalidation — so also revalidate on a timer to pick those up promptly.
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [posts, categories] = await Promise.all([
     prisma.post.findMany({
-      where: { published: true },
+      where: publicPostWhere(),
       orderBy: { publishedAt: "desc" },
       include: { category: true },
     }),

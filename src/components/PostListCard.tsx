@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { formatDate } from "@/lib/format";
 import type { Post, Category } from "@/generated/prisma/client";
@@ -11,11 +12,13 @@ export function PostListCard({ post }: { post: Post & { category: Category } }) 
     >
       <div className="relative aspect-video w-full overflow-hidden">
         {post.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={post.coverImageUrl}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            alt={post.coverImageAlt ?? ""}
+            fill
+            unoptimized
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
         <CategoryBadge name={post.category.name} slug={post.category.slug} />

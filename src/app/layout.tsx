@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getSiteSettings } from "@/lib/siteSettings";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,12 +16,32 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
+  const siteUrl = getSiteUrl();
   return {
+    metadataBase: new URL(siteUrl),
     title: {
       default: settings.siteName,
       template: `%s · ${settings.siteName}`,
     },
     description: settings.footerText,
+    alternates: {
+      types: {
+        "application/rss+xml": `${siteUrl}/feed.xml`,
+      },
+    },
+    openGraph: {
+      siteName: settings.siteName,
+      title: settings.siteName,
+      description: settings.footerText,
+      locale: "pt_BR",
+      type: "website",
+      url: siteUrl,
+    },
+    twitter: {
+      card: "summary",
+      title: settings.siteName,
+      description: settings.footerText,
+    },
   };
 }
 

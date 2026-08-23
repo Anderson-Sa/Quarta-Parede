@@ -7,6 +7,9 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Início" },
   { href: "/admin/posts", label: "Posts" },
   { href: "/admin/categorias", label: "Categorias" },
+  { href: "/admin/tags", label: "Tags" },
+  { href: "/admin/comentarios", label: "Comentários" },
+  { href: "/admin/assinantes", label: "Assinantes" },
   { href: "/admin/configuracoes", label: "Configurações" },
 ];
 

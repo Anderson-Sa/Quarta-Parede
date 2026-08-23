@@ -1,11 +1,24 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
+import { Pagination } from "@/components/Pagination";
 
-export default async function PostsPage() {
+const PAGE_SIZE = 20;
+
+export default async function PostsPage({ searchParams }: PageProps<"/admin/posts">) {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Number(Array.isArray(pageParam) ? pageParam[0] : pageParam);
+  const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+  const totalPosts = await prisma.post.count();
+  const totalPages = Math.max(1, Math.ceil(totalPosts / PAGE_SIZE));
+  const page = Math.min(currentPage, totalPages);
+
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },
     include: { category: true },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
   });
 
   return (
@@ -43,7 +56,11 @@ export default async function PostsPage() {
                 </td>
                 <td className="px-4 py-3 text-neutral-500">{post.category.name}</td>
                 <td className="px-4 py-3">
-                  {post.published ? (
+                  {post.published && post.publishedAt && post.publishedAt > new Date() ? (
+                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                      Agendado
+                    </span>
+                  ) : post.published ? (
                     <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                       Publicado
                     </span>
@@ -66,6 +83,13 @@ export default async function PostsPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        basePath="/admin/posts"
+        currentPage={page}
+        totalPages={totalPages}
+        variant="admin"
+      />
     </div>
   );
 }
