@@ -1,5 +1,13 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_HOME_SECTIONS,
+  parseHomeSections,
+  type DestaquesLayoutValue,
+  type FontFamilyValue,
+} from "@/lib/homeSections";
+
+export * from "@/lib/homeSections";
 
 export const DEFAULT_SITE_SETTINGS = {
   siteName: "Quarta Parede",
@@ -7,6 +15,11 @@ export const DEFAULT_SITE_SETTINGS = {
   logoUrl: null as string | null,
   footerText:
     "Quarta Parede — notícias do universo geek: cinema, animes, séries e games.",
+  brandColor: "#8b5cf6",
+  accentColor: "#22d3ee",
+  fontFamily: "geist" as FontFamilyValue,
+  homeSections: DEFAULT_HOME_SECTIONS,
+  destaquesLayout: "grid" as DestaquesLayoutValue,
 };
 
 export const getSiteSettings = cache(async () => {
@@ -17,5 +30,10 @@ export const getSiteSettings = cache(async () => {
     slogan: settings.slogan,
     logoUrl: settings.logoUrl,
     footerText: settings.footerText,
+    brandColor: settings.brandColor,
+    accentColor: settings.accentColor,
+    fontFamily: settings.fontFamily as FontFamilyValue,
+    homeSections: parseHomeSections(settings.homeSectionOrder),
+    destaquesLayout: settings.destaquesLayout as DestaquesLayoutValue,
   };
 });

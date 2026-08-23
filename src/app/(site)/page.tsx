@@ -1,9 +1,11 @@
+import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
-import { FeaturedPostCard } from "@/components/FeaturedPostCard";
+import { DestaquesSection } from "@/components/DestaquesSection";
 import { PostListCard } from "@/components/PostListCard";
 import { PostCarousel } from "@/components/PostCarousel";
 import { getCategories } from "@/lib/categories";
 import { publicPostWhere } from "@/lib/publicPosts";
+import { getSiteSettings, type HomeSectionId } from "@/lib/siteSettings";
 
 // The home page is statically generated and only re-rendered on-demand (via
 // revalidatePath in admin actions). Scheduled posts become publicly visible
@@ -12,13 +14,14 @@ import { publicPostWhere } from "@/lib/publicPosts";
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [posts, categories] = await Promise.all([
+  const [posts, categories, settings] = await Promise.all([
     prisma.post.findMany({
       where: publicPostWhere(),
       orderBy: { publishedAt: "desc" },
       include: { category: true },
     }),
     getCategories(),
+    getSiteSettings(),
   ]);
 
   if (posts.length === 0) {
@@ -31,34 +34,34 @@ export default async function HomePage() {
   }
 
   const [featured, ...rest] = posts;
-  const secondaryFeatured = rest.slice(0, 2);
-  const carouselPosts = rest.slice(2, 8);
-  const latest = rest.slice(8);
+  const secondaryFeatured = rest.slice(0, 4);
+  const carouselPosts = rest.slice(4, 10);
+  const latest = rest.slice(10);
 
-  return (
-    <div className="flex flex-col gap-12">
+  const sectionContent: Record<HomeSectionId, React.ReactNode> = {
+    destaques: (
       <section>
         <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
           Destaques
         </h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:grid-rows-2">
-          <FeaturedPostCard post={featured} className="sm:col-span-2 sm:row-span-2" />
-          {secondaryFeatured.map((post) => (
-            <FeaturedPostCard key={post.id} post={post} />
-          ))}
-        </div>
+        <DestaquesSection
+          posts={[featured, ...secondaryFeatured]}
+          categories={categories}
+          layout={settings.destaquesLayout}
+        />
       </section>
-
-      {carouselPosts.length > 0 && (
+    ),
+    outros:
+      carouselPosts.length > 0 ? (
         <section>
           <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
             Outros posts
           </h2>
           <PostCarousel posts={carouselPosts} categories={categories} />
         </section>
-      )}
-
-      {latest.length > 0 && (
+      ) : null,
+    ultimas:
+      latest.length > 0 ? (
         <section>
           <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
             Últimas
@@ -69,7 +72,16 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
-      )}
+      ) : null,
+  };
+
+  return (
+    <div className="flex flex-col gap-12">
+      {settings.homeSections
+        .filter((section) => section.visible)
+        .map((section) => (
+          <Fragment key={section.id}>{sectionContent[section.id]}</Fragment>
+        ))}
     </div>
   );
 }

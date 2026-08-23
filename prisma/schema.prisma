@@ -11,12 +11,20 @@ datasource db {
 }
 
 model SiteSettings {
-  id         String   @id @default(cuid())
-  siteName   String   @default("Quarta Parede")
-  slogan     String   @default("Notícias e novidades do universo geek.")
-  logoUrl    String?
-  footerText String   @default("Quarta Parede — notícias do universo geek: cinema, animes, séries e games.")
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  siteName         String   @default("Quarta Parede")
+  slogan           String   @default("Notícias e novidades do universo geek.")
+  logoUrl          String?
+  footerText       String   @default("Quarta Parede — notícias do universo geek: cinema, animes, séries e games.")
+  brandColor       String   @default("#8b5cf6")
+  accentColor      String   @default("#22d3ee")
+  fontFamily       String   @default("geist")
+  // JSON-encoded array of { id: "destaques" | "outros" | "ultimas", visible: boolean },
+  // in display order. See src/lib/siteSettings.ts#parseHomeSections.
+  homeSectionOrder String   @default("[{\"id\":\"destaques\",\"visible\":true},{\"id\":\"outros\",\"visible\":true},{\"id\":\"ultimas\",\"visible\":true}]")
+  // One of the DESTAQUES_LAYOUT_VALUES in src/lib/homeSections.ts.
+  destaquesLayout  String   @default("grid")
+  updatedAt        DateTime @updatedAt
 }
 
 model Category {
