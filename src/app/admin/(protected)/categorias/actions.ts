@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/slug";
+import { slugify, uniqueSlug } from "@/lib/slug";
+import { categorySchema, firstIssueMessage } from "@/lib/validation";
 
 export type CategoryFormState = { error?: string } | undefined;
 
@@ -10,14 +11,17 @@ export async function createCategory(
   _prevState: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "Informe um nome." };
+  const parsed = categorySchema.safeParse({ name: String(formData.get("name") ?? "") });
+  if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
+  const { name } = parsed.data;
 
-  const slug = slugify(name);
-  if (!slug) return { error: "Nome inválido." };
+  const baseSlug = slugify(name);
+  if (!baseSlug) return { error: "Nome inválido." };
 
-  const existing = await prisma.category.findUnique({ where: { slug } });
-  if (existing) return { error: "Já existe uma categoria com esse nome." };
+  const slug = await uniqueSlug(baseSlug, async (candidate) => {
+    const existing = await prisma.category.findUnique({ where: { slug: candidate } });
+    return existing !== null;
+  });
 
   await prisma.category.create({ data: { name, slug } });
   revalidatePath("/admin/categorias");

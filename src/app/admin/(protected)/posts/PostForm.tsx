@@ -37,6 +37,7 @@ export function PostForm({
           id="title"
           name="title"
           required
+          maxLength={200}
           defaultValue={post?.title}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />
@@ -71,6 +72,8 @@ export function PostForm({
         <input
           id="coverImageUrl"
           name="coverImageUrl"
+          type="url"
+          maxLength={20000}
           defaultValue={post?.coverImageUrl ?? ""}
           placeholder="https://..."
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
@@ -86,6 +89,7 @@ export function PostForm({
           name="excerpt"
           required
           rows={2}
+          maxLength={500}
           defaultValue={post?.excerpt}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />
@@ -100,6 +104,7 @@ export function PostForm({
           name="content"
           required
           rows={16}
+          maxLength={20000}
           defaultValue={post?.content}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-brand"
         />

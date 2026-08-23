@@ -16,6 +16,7 @@ export function CategoryForm() {
           id="name"
           name="name"
           required
+          maxLength={100}
           placeholder="Ex: Animes"
           className="rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />

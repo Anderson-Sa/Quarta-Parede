@@ -4,9 +4,23 @@ import type { Metadata } from "next";
 import { User, Calendar, Folder } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { categoryColor } from "@/lib/categoryColor";
+
+// Allow <video>/<source> in post content (used for embedded clips) on top of
+// the default safe HTML allowlist. Everything else (scripts, event handlers,
+// iframes, etc.) is stripped by rehype-sanitize.
+const postContentSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), "video", "source"],
+  attributes: {
+    ...defaultSchema.attributes,
+    video: ["controls", "src", "poster", "width", "height", "muted", "loop"],
+    source: ["src", "type"],
+  },
+};
 
 export async function generateMetadata({
   params,
@@ -60,7 +74,9 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
       )}
 
       <div className="prose prose-invert mt-8 max-w-none prose-headings:font-bold prose-a:text-brand prose-video:rounded-lg prose-video:border prose-video:border-surface-border">
-        <ReactMarkdown rehypePlugins={[rehypeRaw]}>{post.content}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={[rehypeRaw, [rehypeSanitize, postContentSchema]]}>
+          {post.content}
+        </ReactMarkdown>
       </div>
     </article>
   );

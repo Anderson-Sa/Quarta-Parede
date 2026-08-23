@@ -26,6 +26,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           id="siteName"
           name="siteName"
           required
+          maxLength={100}
           defaultValue={settings.siteName}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />
@@ -39,6 +40,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           id="slogan"
           name="slogan"
           required
+          maxLength={300}
           defaultValue={settings.slogan}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />
@@ -51,6 +53,8 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         <input
           id="logoUrl"
           name="logoUrl"
+          type="url"
+          maxLength={20000}
           defaultValue={settings.logoUrl ?? ""}
           placeholder="https://..."
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
@@ -69,6 +73,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           name="footerText"
           required
           rows={2}
+          maxLength={1000}
           defaultValue={settings.footerText}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand"
         />
