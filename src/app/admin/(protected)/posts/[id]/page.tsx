@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { PostForm } from "../PostForm";
 import { updatePost } from "../actions";
 import { DeletePostButton } from "../DeletePostButton";
@@ -18,12 +19,9 @@ export default async function EditarPostPage({
   if (!post) notFound();
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Editar post</h1>
-        <DeletePostButton id={post.id} />
-      </div>
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
+    <div>
+      <PageHeader title="Editar post" actions={<DeletePostButton id={post.id} />} />
+      <div className="mt-6">
         <PostForm
           categories={categories}
           tags={tags}

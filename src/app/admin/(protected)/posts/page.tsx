@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { Plus, FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { Pagination } from "@/components/Pagination";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/admin/Badge";
+import { EmptyState } from "@/components/admin/EmptyState";
 
 const PAGE_SIZE = 20;
 
@@ -23,73 +27,62 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Posts</h1>
-        <Link
-          href="/admin/posts/novo"
-          className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-        >
-          + Novo post
-        </Link>
-      </div>
-
-      <div className="mt-6 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Título</th>
-              <th className="px-4 py-3 font-medium">Categoria</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Criado em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {posts.map((post) => (
-              <tr key={post.id} className="border-t border-neutral-100">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/posts/${post.id}`}
-                    className="font-medium text-neutral-800 hover:text-brand"
-                  >
-                    {post.title}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-neutral-500">{post.category.name}</td>
-                <td className="px-4 py-3">
-                  {post.published && post.publishedAt && post.publishedAt > new Date() ? (
-                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                      Agendado
-                    </span>
-                  ) : post.published ? (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                      Publicado
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
-                      Rascunho
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-neutral-500">{formatDate(post.createdAt)}</td>
-              </tr>
-            ))}
-            {posts.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-neutral-400">
-                  Nenhum post cadastrado ainda.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <Pagination
-        basePath="/admin/posts"
-        currentPage={page}
-        totalPages={totalPages}
-        variant="admin"
+      <PageHeader
+        title="Posts"
+        actions={
+          <Link
+            href="/admin/posts/novo"
+            className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+          >
+            <Plus className="h-4 w-4" />
+            Novo post
+          </Link>
+        }
       />
+
+      <div className="mt-6 overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
+        {posts.length === 0 ? (
+          <EmptyState icon={FileText} message="Nenhum post cadastrado ainda." />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/40">
+              <tr>
+                <th className="px-4 py-3.5 font-semibold">Título</th>
+                <th className="px-4 py-3.5 font-semibold">Categoria</th>
+                <th className="px-4 py-3.5 font-semibold">Status</th>
+                <th className="px-4 py-3.5 font-semibold">Criado em</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-border">
+              {posts.map((post) => (
+                <tr key={post.id} className="transition-colors hover:bg-white/[0.03]">
+                  <td className="px-4 py-3.5">
+                    <Link
+                      href={`/admin/posts/${post.id}`}
+                      className="font-medium text-foreground hover:text-brand"
+                    >
+                      {post.title}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3.5 text-foreground/60">{post.category.name}</td>
+                  <td className="px-4 py-3.5">
+                    {post.published && post.publishedAt && post.publishedAt > new Date() ? (
+                      <Badge tone="info">Agendado</Badge>
+                    ) : post.published ? (
+                      <Badge tone="success">Publicado</Badge>
+                    ) : (
+                      <Badge tone="neutral">Rascunho</Badge>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5 text-foreground/60">{formatDate(post.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <Pagination basePath="/admin/posts" currentPage={page} totalPages={totalPages} />
     </div>
   );
 }

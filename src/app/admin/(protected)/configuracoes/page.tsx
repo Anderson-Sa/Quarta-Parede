@@ -1,4 +1,6 @@
 import { getSiteSettings } from "@/lib/siteSettings";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { AdminCard } from "@/components/admin/AdminCard";
 import { SettingsForm } from "./SettingsForm";
 
 export default async function ConfiguracoesPage() {
@@ -6,14 +8,14 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold">Configurações do site</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Personalize o nome, o slogan, o logo e o rodapé exibidos no site.
-      </p>
+      <PageHeader
+        title="Configurações do site"
+        description="Personalize o nome, o slogan, o logo e o rodapé exibidos no site."
+      />
 
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
+      <AdminCard className="mt-6">
         <SettingsForm settings={settings} />
-      </div>
+      </AdminCard>
     </div>
   );
 }

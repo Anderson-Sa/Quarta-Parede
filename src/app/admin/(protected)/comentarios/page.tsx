@@ -1,5 +1,9 @@
+import { MessageSquare } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/admin/Badge";
+import { EmptyState } from "@/components/admin/EmptyState";
 import { CommentActions } from "./CommentActions";
 
 export default async function ComentariosPage() {
@@ -10,58 +14,52 @@ export default async function ComentariosPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">Comentários</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Comentários pendentes aparecem primeiro. Só comentários aprovados ficam visíveis no
-        blog.
-      </p>
+      <PageHeader
+        title="Comentários"
+        description="Comentários pendentes aparecem primeiro. Só comentários aprovados ficam visíveis no blog."
+      />
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Post</th>
-              <th className="px-4 py-3 font-medium">Autor</th>
-              <th className="px-4 py-3 font-medium">Comentário</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {comments.map((comment) => (
-              <tr key={comment.id} className="border-t border-neutral-100 align-top">
-                <td className="max-w-[160px] truncate px-4 py-3 font-medium">
-                  {comment.post.title}
-                </td>
-                <td className="px-4 py-3 text-neutral-500">{comment.authorName}</td>
-                <td className="max-w-xs px-4 py-3 text-neutral-700">{comment.body}</td>
-                <td className="px-4 py-3">
-                  {comment.approved ? (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                      Aprovado
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      Pendente
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-neutral-500">{formatDate(comment.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <CommentActions id={comment.id} approved={comment.approved} />
-                </td>
-              </tr>
-            ))}
-            {comments.length === 0 && (
+      <div className="mt-6 overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
+        {comments.length === 0 ? (
+          <EmptyState icon={MessageSquare} message="Nenhum comentário ainda." />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/40">
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-neutral-400">
-                  Nenhum comentário ainda.
-                </td>
+                <th className="px-4 py-3.5 font-semibold">Post</th>
+                <th className="px-4 py-3.5 font-semibold">Autor</th>
+                <th className="px-4 py-3.5 font-semibold">Comentário</th>
+                <th className="px-4 py-3.5 font-semibold">Status</th>
+                <th className="px-4 py-3.5 font-semibold">Data</th>
+                <th className="px-4 py-3.5" />
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-surface-border">
+              {comments.map((comment) => (
+                <tr key={comment.id} className="align-top transition-colors hover:bg-white/[0.03]">
+                  <td className="max-w-[160px] truncate px-4 py-3.5 font-medium text-foreground">
+                    {comment.post.title}
+                  </td>
+                  <td className="px-4 py-3.5 text-foreground/60">{comment.authorName}</td>
+                  <td className="max-w-xs px-4 py-3.5 text-foreground/80">{comment.body}</td>
+                  <td className="px-4 py-3.5">
+                    {comment.approved ? (
+                      <Badge tone="success">Aprovado</Badge>
+                    ) : (
+                      <Badge tone="warning">Pendente</Badge>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5 text-foreground/60">
+                    {formatDate(comment.createdAt)}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <CommentActions id={comment.id} approved={comment.approved} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

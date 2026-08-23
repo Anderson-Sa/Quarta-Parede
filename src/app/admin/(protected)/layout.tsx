@@ -1,47 +1,47 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ExternalLink, LogOut } from "lucide-react";
 import { isAdminSessionValid } from "@/lib/adminSession";
+import { prisma } from "@/lib/prisma";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "./actions";
-
-const NAV_ITEMS = [
-  { href: "/admin", label: "Início" },
-  { href: "/admin/posts", label: "Posts" },
-  { href: "/admin/categorias", label: "Categorias" },
-  { href: "/admin/tags", label: "Tags" },
-  { href: "/admin/comentarios", label: "Comentários" },
-  { href: "/admin/assinantes", label: "Assinantes" },
-  { href: "/admin/configuracoes", label: "Configurações" },
-];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const authenticated = await isAdminSessionValid();
   if (!authenticated) redirect("/admin/login");
 
+  const pendingComments = await prisma.comment.count({ where: { approved: false } });
+
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <header className="border-b border-neutral-300 bg-white">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-surface-border bg-background/95 backdrop-blur">
         <div className="flex items-center justify-between px-6 py-3">
           <Link href="/admin" className="text-xl font-extrabold text-brand">
             Quarta Parede Admin
           </Link>
           <div className="flex items-center gap-4 text-sm">
-            <Link href="/" target="_blank" className="text-neutral-500 hover:text-brand">
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center gap-1.5 text-foreground/60 hover:text-brand"
+            >
+              <ExternalLink className="h-4 w-4" />
               Ver blog
             </Link>
             <form action={logout}>
-              <button type="submit" className="font-medium text-neutral-700 hover:text-brand">
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 font-medium text-foreground/60 hover:text-brand"
+              >
+                <LogOut className="h-4 w-4" />
                 Sair
               </button>
             </form>
           </div>
         </div>
-        <nav className="flex items-center gap-5 overflow-x-auto border-t border-neutral-100 px-6 py-2.5 text-sm font-medium text-neutral-700">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="shrink-0 hover:text-brand">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="border-t border-surface-border">
+          <AdminNav pendingComments={pendingComments} />
+        </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
     </div>

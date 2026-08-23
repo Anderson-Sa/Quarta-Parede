@@ -1,5 +1,8 @@
+import { Mail } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { EmptyState } from "@/components/admin/EmptyState";
 
 export default async function AssinantesPage() {
   const subscribers = await prisma.subscriber.findMany({
@@ -8,37 +11,36 @@ export default async function AssinantesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Assinantes da newsletter</h1>
-        <span className="text-sm text-neutral-500">{subscribers.length} inscritos</span>
-      </div>
+      <PageHeader
+        title="Assinantes da newsletter"
+        actions={
+          <span className="text-sm text-foreground/60">{subscribers.length} inscritos</span>
+        }
+      />
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-neutral-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">E-mail</th>
-              <th className="px-4 py-3 font-medium">Inscrito em</th>
-            </tr>
-          </thead>
-          <tbody>
-            {subscribers.map((subscriber) => (
-              <tr key={subscriber.id} className="border-t border-neutral-100">
-                <td className="px-4 py-3 font-medium">{subscriber.email}</td>
-                <td className="px-4 py-3 text-neutral-500">
-                  {formatDate(subscriber.createdAt)}
-                </td>
-              </tr>
-            ))}
-            {subscribers.length === 0 && (
+      <div className="mt-6 overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
+        {subscribers.length === 0 ? (
+          <EmptyState icon={Mail} message="Nenhum assinante ainda." />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs font-semibold uppercase tracking-wide text-foreground/40">
               <tr>
-                <td colSpan={2} className="px-4 py-6 text-center text-neutral-400">
-                  Nenhum assinante ainda.
-                </td>
+                <th className="px-4 py-3.5 font-semibold">E-mail</th>
+                <th className="px-4 py-3.5 font-semibold">Inscrito em</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-surface-border">
+              {subscribers.map((subscriber) => (
+                <tr key={subscriber.id} className="transition-colors hover:bg-white/[0.03]">
+                  <td className="px-4 py-3.5 font-medium text-foreground">{subscriber.email}</td>
+                  <td className="px-4 py-3.5 text-foreground/60">
+                    {formatDate(subscriber.createdAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

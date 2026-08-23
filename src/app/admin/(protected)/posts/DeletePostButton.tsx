@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import { deletePost } from "./actions";
 
 export function DeletePostButton({ id }: { id: string }) {
@@ -19,8 +20,9 @@ export function DeletePostButton({ id }: { id: string }) {
           router.push("/admin/posts");
         });
       }}
-      className="text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-foreground/60 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
     >
+      <Trash2 className="h-4 w-4" />
       Excluir post
     </button>
   );

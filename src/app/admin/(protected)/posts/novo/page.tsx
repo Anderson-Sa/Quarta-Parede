@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { PostForm } from "../PostForm";
 import { createPost } from "../actions";
 
@@ -9,9 +10,9 @@ export default async function NovoPostPage() {
   ]);
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold">Novo post</h1>
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6">
+    <div>
+      <PageHeader title="Novo post" />
+      <div className="mt-6">
         <PostForm
           categories={categories}
           tags={tags}
