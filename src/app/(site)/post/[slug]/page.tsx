@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { User, Calendar, Folder } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
-import { CategoryTag } from "@/components/CategoryTag";
+import { categoryColor } from "@/lib/categoryColor";
 
 export async function generateMetadata({
   params,
@@ -25,15 +26,29 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
   });
   if (!post || !post.published) notFound();
 
+  const color = await categoryColor(post.category.slug);
+
   return (
     <article>
-      <Link href={`/categoria/${post.category.slug}`}>
-        <CategoryTag name={post.category.name} slug={post.category.slug} />
-      </Link>
-      <h1 className="mt-2 text-3xl font-extrabold">{post.title}</h1>
-      <p className="mt-2 text-sm text-foreground/40">
-        {formatDate(post.publishedAt ?? post.createdAt)}
-      </p>
+      <h1 className="text-3xl font-extrabold">{post.title}</h1>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-foreground/60">
+        <span className="flex items-center gap-1.5">
+          <User className="h-4 w-4" />
+          Quarta Parede
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Calendar className="h-4 w-4" />
+          {formatDate(post.publishedAt ?? post.createdAt)}
+        </span>
+        <Link
+          href={`/categoria/${post.category.slug}`}
+          className={`flex items-center gap-1.5 font-bold uppercase tracking-wide ${color.text}`}
+        >
+          <Folder className="h-4 w-4" />
+          {post.category.name}
+        </Link>
+      </div>
 
       {post.coverImageUrl && (
         // eslint-disable-next-line @next/next/no-img-element

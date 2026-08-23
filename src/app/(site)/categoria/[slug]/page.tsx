@@ -31,7 +31,7 @@ export default async function CategoriaPage({
 
   return (
     <div>
-      <h1 className="flex items-center gap-3 text-3xl font-extrabold">
+      <h1 className="flex items-center gap-3 text-3xl font-extrabold uppercase tracking-wide">
         <span className={`h-7 w-1.5 rounded-full ${color.bg}`} />
         {category.name}
       </h1>
@@ -41,20 +41,34 @@ export default async function CategoriaPage({
           Nenhum post publicado nessa categoria ainda.
         </p>
       ) : (
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
             <Link
               key={post.id}
               href={`/post/${post.slug}`}
-              className={`group rounded-lg border border-surface-border bg-surface-muted p-5 transition-colors ${color.hoverBorder}`}
+              className={`group flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-muted transition-colors ${color.hoverBorder}`}
             >
-              <h2 className="text-lg font-bold group-hover:text-brand">
-                {post.title}
-              </h2>
-              <p className="mt-2 text-sm text-foreground/60">{post.excerpt}</p>
-              <p className="mt-3 text-xs text-foreground/40">
-                {formatDate(post.publishedAt ?? post.createdAt)}
-              </p>
+              {post.coverImageUrl && (
+                <div className="aspect-video w-full overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.coverImageUrl}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+              )}
+              <div className="flex flex-1 flex-col p-5">
+                <h2 className="text-lg font-bold group-hover:text-brand">
+                  {post.title}
+                </h2>
+                <p className="mt-2 line-clamp-3 text-sm text-foreground/60">
+                  {post.excerpt}
+                </p>
+                <p className="mt-4 text-xs text-foreground/40">
+                  {formatDate(post.publishedAt ?? post.createdAt)}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

@@ -1,55 +1,67 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/format";
-import { CategoryTag } from "@/components/CategoryTag";
+import { FeaturedPostCard } from "@/components/FeaturedPostCard";
+import { PostListCard } from "@/components/PostListCard";
+import { PostCarousel } from "@/components/PostCarousel";
+import { getCategories } from "@/lib/categories";
 
 export default async function HomePage() {
-  const posts = await prisma.post.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: "desc" },
-    include: { category: true },
-  });
+  const [posts, categories] = await Promise.all([
+    prisma.post.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      include: { category: true },
+    }),
+    getCategories(),
+  ]);
+
+  if (posts.length === 0) {
+    return (
+      <div>
+        <h1 className="text-3xl font-extrabold">Últimas do universo geek</h1>
+        <p className="mt-10 text-foreground/60">Nenhum post publicado ainda.</p>
+      </div>
+    );
+  }
+
+  const [featured, ...rest] = posts;
+  const secondaryFeatured = rest.slice(0, 2);
+  const carouselPosts = rest.slice(2, 8);
+  const latest = rest.slice(8);
 
   return (
-    <div>
-      <h1 className="text-3xl font-extrabold">Últimas do universo geek</h1>
-      <p className="mt-1 text-foreground/60">
-        Cinema, animes, séries e games — tudo em um só lugar.
-      </p>
-
-      {posts.length === 0 ? (
-        <p className="mt-10 text-foreground/60">Nenhum post publicado ainda.</p>
-      ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {posts.map((post) => (
-            <Link
-              key={post.id}
-              href={`/post/${post.slug}`}
-              className="group flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-muted transition-colors hover:border-brand"
-            >
-              {post.coverImageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={post.coverImageUrl}
-                  alt=""
-                  className="h-44 w-full object-cover"
-                />
-              )}
-              <div className="flex flex-1 flex-col p-5">
-                <CategoryTag name={post.category.name} slug={post.category.slug} />
-                <h2 className="mt-2 text-lg font-bold group-hover:text-brand">
-                  {post.title}
-                </h2>
-                <p className="mt-2 line-clamp-3 text-sm text-foreground/60">
-                  {post.excerpt}
-                </p>
-                <p className="mt-4 text-xs text-foreground/40">
-                  {formatDate(post.publishedAt ?? post.createdAt)}
-                </p>
-              </div>
-            </Link>
+    <div className="flex flex-col gap-12">
+      <section>
+        <h1 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
+          Destaques
+        </h1>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:grid-rows-2">
+          <FeaturedPostCard post={featured} className="sm:col-span-2 sm:row-span-2" />
+          {secondaryFeatured.map((post) => (
+            <FeaturedPostCard key={post.id} post={post} />
           ))}
         </div>
+      </section>
+
+      {carouselPosts.length > 0 && (
+        <section>
+          <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
+            Outros posts
+          </h2>
+          <PostCarousel posts={carouselPosts} categories={categories} />
+        </section>
+      )}
+
+      {latest.length > 0 && (
+        <section>
+          <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
+            Últimas
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {latest.map((post) => (
+              <PostListCard key={post.id} post={post} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

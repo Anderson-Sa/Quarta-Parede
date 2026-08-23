@@ -1,37 +1,26 @@
 import Link from "next/link";
 import { getCategories } from "@/lib/categories";
-import { colorAt } from "@/lib/categoryColor";
+import { NavLinks } from "@/components/NavLinks";
 
 export async function Header() {
   const categories = await getCategories();
 
   return (
-    <header className="sticky top-0 z-10 bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
-        <Link
-          href="/"
-          className="text-2xl font-extrabold tracking-tight text-brand"
-        >
-          Quarta Parede
+    <header className="sticky top-0 z-10 border-b border-surface-border bg-gradient-to-br from-brand-dark/30 via-fuchsia-600/15 to-background backdrop-blur">
+      <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/" className="block">
+          <span className="text-2xl font-extrabold tracking-tight text-brand">
+            Quarta Parede
+          </span>
+          <p className="mt-1 text-sm text-foreground/60">
+            Cinema, animes, séries e games — tudo em um só lugar.
+          </p>
         </Link>
-      </div>
 
-      <nav className="border-t border-surface-border">
-        <div className="mx-auto flex max-w-5xl items-stretch overflow-x-auto px-6">
-          {categories.map((category, index) => {
-            const color = colorAt(index);
-            return (
-              <Link
-                key={category.slug}
-                href={`/categoria/${category.slug}`}
-                className={`shrink-0 border-b-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-foreground/80 transition-colors hover:text-foreground ${color.border}`}
-              >
-                {category.name}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+        <nav className="overflow-x-auto">
+          <NavLinks categories={categories} />
+        </nav>
+      </div>
     </header>
   );
 }
