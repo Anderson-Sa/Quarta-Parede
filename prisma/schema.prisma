@@ -16,6 +16,8 @@ model SiteSettings {
   slogan           String   @default("Notícias e novidades do universo geek.")
   logoUrl          String?
   footerText       String   @default("Quarta Parede — notícias do universo geek: cinema, animes, séries e games.")
+  // Rendered on the public "Sobre nós" page (src/app/(site)/sobre/page.tsx).
+  aboutText        String   @default("Somos apaixonados por cultura geek: cinema, animes, séries e games. Este espaço nasceu para compartilhar notícias, análises e tudo que move essas comunidades.")
   brandColor       String   @default("#8b5cf6")
   accentColor      String   @default("#22d3ee")
   fontFamily       String   @default("geist")
@@ -28,6 +30,15 @@ model SiteSettings {
   outrosLayout     String   @default("carrossel")
   // One of the ULTIMAS_LAYOUT_VALUES in src/lib/homeSections.ts.
   ultimasLayout    String   @default("grid")
+  // Social links shown in the footer (src/components/SocialLinks.tsx). All
+  // optional — a network with no URL set is simply omitted from the list.
+  instagramUrl     String?
+  facebookUrl      String?
+  threadsUrl       String?
+  twitterUrl       String?
+  pinterestUrl     String?
+  whatsappUrl      String?
+  telegramUrl      String?
   updatedAt        DateTime @updatedAt
 }
 

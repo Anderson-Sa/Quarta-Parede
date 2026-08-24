@@ -145,6 +145,18 @@ export const siteSettingsSchema = z.object({
     .trim()
     .min(1, "Informe o texto do rodapé.")
     .max(1000, "Texto do rodapé muito longo (máx. 1000 caracteres)."),
+  aboutText: z
+    .string()
+    .trim()
+    .min(1, "Informe o texto da página Sobre nós.")
+    .max(5000, "Texto da página Sobre nós muito longo (máx. 5000 caracteres)."),
+  instagramUrl: optionalUrl,
+  facebookUrl: optionalUrl,
+  threadsUrl: optionalUrl,
+  twitterUrl: optionalUrl,
+  pinterestUrl: optionalUrl,
+  whatsappUrl: optionalUrl,
+  telegramUrl: optionalUrl,
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;

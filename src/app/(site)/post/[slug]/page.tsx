@@ -14,7 +14,7 @@ import { getSiteSettings } from "@/lib/siteSettings";
 import { parseContent, blocksToPlainMarkdown } from "@/lib/contentBlocks";
 import { BlockRenderer } from "@/components/BlockRenderer";
 import { TableOfContents } from "@/components/TableOfContents";
-import { ShareButtons } from "@/components/ShareButtons";
+import { SocialLinks } from "@/components/SocialLinks";
 import { PostListCard } from "@/components/PostListCard";
 import { CommentForm } from "@/components/CommentForm";
 import { ReadingProgress } from "@/components/ReadingProgress";
@@ -182,8 +182,16 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
         <BlockRenderer blocks={blocks} />
       </div>
 
-      <div className="mt-10 border-t border-surface-border pt-6">
-        <ShareButtons url={postUrl} title={post.title} />
+      <div className="mt-10 flex justify-center">
+        <SocialLinks
+          instagramUrl={settings.instagramUrl}
+          facebookUrl={settings.facebookUrl}
+          threadsUrl={settings.threadsUrl}
+          twitterUrl={settings.twitterUrl}
+          pinterestUrl={settings.pinterestUrl}
+          whatsappUrl={settings.whatsappUrl}
+          telegramUrl={settings.telegramUrl}
+        />
       </div>
 
       {relatedPosts.length > 0 && (
