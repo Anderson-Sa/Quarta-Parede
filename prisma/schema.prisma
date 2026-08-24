@@ -99,6 +99,24 @@ model RateLimitBucket {
   resetAt   DateTime
 }
 
+// A sponsored banner shown on the public site (see src/components/CampaignBanner.tsx).
+// `active` plus the optional date window both gate visibility — see
+// src/lib/campaigns.ts#getActiveCampaigns.
+model Campaign {
+  id        String    @id @default(cuid())
+  title     String
+  imageUrl  String
+  linkUrl   String
+  ctaText   String?
+  // One of the CAMPAIGN_PLACEMENT_VALUES in src/lib/homeSections.ts.
+  placement String    @default("home_posts")
+  active    Boolean   @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model PostRevision {
   id        String   @id @default(cuid())
   postId    String

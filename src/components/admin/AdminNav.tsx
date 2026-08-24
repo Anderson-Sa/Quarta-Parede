@@ -11,6 +11,7 @@ import {
   Mail,
   Settings,
   Palette,
+  Megaphone,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/admin/tags", label: "Tags", icon: Tag },
   { href: "/admin/comentarios", label: "Comentários", icon: MessageSquare },
   { href: "/admin/assinantes", label: "Assinantes", icon: Mail },
+  { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/aparencia", label: "Aparência", icon: Palette },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ] as const;

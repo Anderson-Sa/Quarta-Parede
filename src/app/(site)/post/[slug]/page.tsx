@@ -13,6 +13,7 @@ import { getSiteUrl } from "@/lib/siteUrl";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { parseContent, blocksToPlainMarkdown } from "@/lib/contentBlocks";
 import { BlockRenderer } from "@/components/BlockRenderer";
+import { CampaignBanner } from "@/components/CampaignBanner";
 import { TableOfContents } from "@/components/TableOfContents";
 import { SocialLinks } from "@/components/SocialLinks";
 import { PostListCard } from "@/components/PostListCard";
@@ -159,6 +160,10 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
           ))}
         </div>
       )}
+
+      <div className="mt-6">
+        <CampaignBanner location="posts" />
+      </div>
 
       {post.coverImageUrl && (
         <div className="relative mt-6 aspect-video w-full overflow-hidden rounded-lg border border-surface-border">

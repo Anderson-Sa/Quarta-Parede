@@ -60,6 +60,17 @@ export const ULTIMAS_LAYOUT_VALUES = ULTIMAS_LAYOUT_OPTIONS.map((option) => opti
   ...UltimasLayoutValue[],
 ];
 
+export const CAMPAIGN_PLACEMENT_OPTIONS = [
+  { value: "home", label: "Somente Home" },
+  { value: "posts", label: "Somente Posts" },
+  { value: "home_posts", label: "Home + Posts" },
+] as const;
+export type CampaignPlacementValue = (typeof CAMPAIGN_PLACEMENT_OPTIONS)[number]["value"];
+export const CAMPAIGN_PLACEMENT_VALUES = CAMPAIGN_PLACEMENT_OPTIONS.map((option) => option.value) as [
+  CampaignPlacementValue,
+  ...CampaignPlacementValue[],
+];
+
 /** Parses the JSON-encoded homeSectionOrder column. Falls back to the
  * default (all 3 sections, visible, in their original order) on any
  * malformed/tampered/outdated shape instead of throwing. */

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { DestaquesSection } from "@/components/DestaquesSection";
 import { OutrosSection } from "@/components/OutrosSection";
 import { UltimasSection } from "@/components/UltimasSection";
+import { CampaignBanner } from "@/components/CampaignBanner";
 import { getCategories } from "@/lib/categories";
 import { publicPostWhere } from "@/lib/publicPosts";
 import { getSiteSettings, type HomeSectionId } from "@/lib/siteSettings";
@@ -77,6 +78,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-12">
+      <CampaignBanner location="home" />
       {settings.homeSections
         .filter((section) => section.visible)
         .map((section) => (

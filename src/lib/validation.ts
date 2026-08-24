@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  CAMPAIGN_PLACEMENT_VALUES,
   DESTAQUES_LAYOUT_VALUES,
   FONT_FAMILY_VALUES,
   HOME_SECTION_IDS,
@@ -157,6 +158,42 @@ export const siteSettingsSchema = z.object({
   pinterestUrl: optionalUrl,
   whatsappUrl: optionalUrl,
   telegramUrl: optionalUrl,
+});
+
+const requiredUrl = z
+  .string()
+  .trim()
+  .min(1, "Informe o link de destino.")
+  .max(2000, "Link muito longo (máx. 2000 caracteres).")
+  .refine((value) => {
+    if (!/^https?:\/\//i.test(value)) return false;
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Link inválido (use http:// ou https://).");
+
+export const campaignSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Informe um título.")
+    .max(150, "Título muito longo (máx. 150 caracteres)."),
+  imageUrl: optionalUrl,
+  linkUrl: requiredUrl,
+  ctaText: z
+    .string()
+    .trim()
+    .max(50, "Texto do botão muito longo (máx. 50 caracteres).")
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : undefined)),
+  placement: z.enum(CAMPAIGN_PLACEMENT_VALUES, "Local de exibição inválido."),
+  active: z.boolean(),
+  startDate: optionalDateTimeLocal,
+  endDate: optionalDateTimeLocal,
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
