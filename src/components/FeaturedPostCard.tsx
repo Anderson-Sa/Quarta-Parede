@@ -17,7 +17,7 @@ export function FeaturedPostCard({
   return (
     <Link
       href={`/post/${post.slug}`}
-      className={`group relative block overflow-hidden rounded-lg border border-surface-border bg-surface-muted ${className}`}
+      className={`group relative block overflow-hidden rounded-lg border border-surface-border bg-surface-muted ${compact ? "min-h-40" : "min-h-56"} ${className}`}
     >
       {post.coverImageUrl && (
         <Image

@@ -61,7 +61,10 @@ export function DestaquesSection({
             <FeaturedPostCard key={post.id} post={post} compact className="aspect-video" />
           ))}
         </div>
-        <FeaturedPostCard post={first} className="order-1 aspect-[4/3] lg:order-2" />
+        <FeaturedPostCard
+          post={first}
+          className="order-1 aspect-[4/3] lg:order-2 lg:aspect-auto lg:h-full"
+        />
         <div className="order-3 flex flex-col gap-4">
           {right.map((post) => (
             <FeaturedPostCard key={post.id} post={post} compact className="aspect-video" />

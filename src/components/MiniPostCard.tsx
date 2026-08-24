@@ -46,7 +46,9 @@ export function MiniPostCard({
           {post.category.name}
         </span>
       </div>
-      <p className="line-clamp-2 p-3 text-sm font-bold group-hover:text-brand">{post.title}</p>
+      <p className="h-16 overflow-hidden p-3 text-sm font-bold leading-5 group-hover:text-brand">
+        {post.title}
+      </p>
     </Link>
   );
 }
