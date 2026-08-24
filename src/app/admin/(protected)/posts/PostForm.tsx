@@ -247,7 +247,7 @@ export function PostForm({
                 const file = event.target.files?.[0];
                 if (file) setPreviewUrl(URL.createObjectURL(file));
               }}
-              className="w-full text-sm text-foreground/60 file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-white/20"
+              className="w-full text-sm text-foreground/60 file:mr-3 file:rounded-md file:border-0 file:bg-foreground/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-foreground/20"
             />
             <p className="mt-1.5 text-xs text-foreground/40">Substitui a URL acima, se enviado.</p>
           </div>

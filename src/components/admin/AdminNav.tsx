@@ -42,7 +42,7 @@ export function AdminNav({ pendingComments = 0 }: { pendingComments?: number }) 
             className={`relative flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-brand/10 text-brand"
-                : "text-foreground/60 hover:bg-white/5 hover:text-foreground"
+                : "text-foreground/60 hover:bg-foreground/5 hover:text-foreground"
             }`}
           >
             <Icon className="h-4 w-4" />

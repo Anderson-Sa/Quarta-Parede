@@ -35,7 +35,7 @@ export default async function TagsPage() {
             </thead>
             <tbody className="divide-y divide-surface-border">
               {tags.map((tag) => (
-                <tr key={tag.id} className="transition-colors hover:bg-white/[0.03]">
+                <tr key={tag.id} className="transition-colors hover:bg-foreground/[0.03]">
                   <td className="px-4 py-3.5 font-medium text-foreground">{tag.name}</td>
                   <td className="px-4 py-3.5 text-foreground/60">{tag.slug}</td>
                   <td className="px-4 py-3.5 text-foreground/60">{tag._count.posts}</td>

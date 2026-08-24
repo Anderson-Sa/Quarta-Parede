@@ -105,7 +105,7 @@ export function CommentsTable({ comments }: { comments: CommentRow[] }) {
           </thead>
           <tbody className="divide-y divide-surface-border">
             {comments.map((comment) => (
-              <tr key={comment.id} className="align-top transition-colors hover:bg-white/[0.03]">
+              <tr key={comment.id} className="align-top transition-colors hover:bg-foreground/[0.03]">
                 <td className="px-4 py-3.5">
                   <input
                     type="checkbox"

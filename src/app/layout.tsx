@@ -1,11 +1,21 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, Inter, Poppins, Roboto } from "next/font/google";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { darkenHex } from "@/lib/color";
 import type { FontFamilyValue } from "@/lib/siteSettings";
 import "./globals.css";
+
+// Anti-flash: applies the admin panel's saved light/dark preference (see
+// src/components/admin/ThemeToggle.tsx) to <html> before hydration, so
+// admin pages don't flash dark-then-light on load. Harmless on public blog
+// pages — the attribute only has a visual effect where the `.admin-shell`
+// class is present (see globals.css), and `beforeInteractive` scripts must
+// live in the root layout, not a nested one, to actually run ahead of
+// hydration instead of racing it.
+const NO_FLASH_SCRIPT = `(function(){try{if(localStorage.getItem("admin-theme")==="light"){document.documentElement.setAttribute("data-admin-theme","light");}}catch(e){}})();`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -89,7 +99,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${poppins.variable} ${roboto.variable} h-full antialiased`}
       style={themeStyle}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Script id="admin-theme-no-flash" strategy="beforeInteractive">
+          {NO_FLASH_SCRIPT}
+        </Script>
+      </body>
     </html>
   );
 }

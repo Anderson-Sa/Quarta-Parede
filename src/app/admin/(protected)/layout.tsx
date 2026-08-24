@@ -4,6 +4,7 @@ import { ExternalLink, LogOut } from "lucide-react";
 import { isAdminSessionValid } from "@/lib/adminSession";
 import { prisma } from "@/lib/prisma";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ThemeToggle } from "@/components/admin/ThemeToggle";
 import { logout } from "./actions";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -13,13 +14,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const pendingComments = await prisma.comment.count({ where: { approved: false } });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-surface-border bg-background/95 backdrop-blur">
         <div className="flex items-center justify-between px-6 py-3">
           <Link href="/admin" className="text-xl font-extrabold text-brand">
             Quarta Parede Admin
           </Link>
           <div className="flex items-center gap-4 text-sm">
+            <ThemeToggle />
             <Link
               href="/"
               target="_blank"

@@ -28,3 +28,17 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Light mode for the admin panel only. Scoped to `.admin-shell` (the root
+ * wrapper of the login page and the protected admin layout) so the toggle
+ * never affects the public-facing blog, which stays on the dark palette
+ * from :root above. Toggled via ThemeToggle, which sets/removes
+ * data-admin-theme on <html> and mirrors the choice to localStorage; see
+ * src/components/admin/ThemeToggle.tsx and the anti-flash inline script in
+ * src/app/admin/layout.tsx. */
+html[data-admin-theme="light"] .admin-shell {
+  --background: #f7f7f8;
+  --foreground: #131316;
+  --surface-muted: #ffffff;
+  --surface-border: #e4e4e7;
+}

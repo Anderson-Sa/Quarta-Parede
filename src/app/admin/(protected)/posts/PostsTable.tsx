@@ -83,7 +83,7 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
           </thead>
           <tbody className="divide-y divide-surface-border">
             {posts.map((post) => (
-              <tr key={post.id} className="transition-colors hover:bg-white/[0.03]">
+              <tr key={post.id} className="transition-colors hover:bg-foreground/[0.03]">
                 <td className="px-4 py-3.5">
                   <input
                     type="checkbox"

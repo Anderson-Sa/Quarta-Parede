@@ -36,7 +36,7 @@ export default async function AssinantesPage() {
             </thead>
             <tbody className="divide-y divide-surface-border">
               {subscribers.map((subscriber) => (
-                <tr key={subscriber.id} className="transition-colors hover:bg-white/[0.03]">
+                <tr key={subscriber.id} className="transition-colors hover:bg-foreground/[0.03]">
                   <td className="px-4 py-3.5 font-medium text-foreground">{subscriber.email}</td>
                   <td className="px-4 py-3.5 text-foreground/60">
                     {formatDate(subscriber.createdAt)}

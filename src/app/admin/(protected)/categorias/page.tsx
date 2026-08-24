@@ -35,7 +35,7 @@ export default async function CategoriasPage() {
             </thead>
             <tbody className="divide-y divide-surface-border">
               {categories.map((category) => (
-                <tr key={category.id} className="transition-colors hover:bg-white/[0.03]">
+                <tr key={category.id} className="transition-colors hover:bg-foreground/[0.03]">
                   <td className="px-4 py-3.5 font-medium text-foreground">{category.name}</td>
                   <td className="px-4 py-3.5 text-foreground/60">{category.slug}</td>
                   <td className="px-4 py-3.5 text-foreground/60">{category._count.posts}</td>

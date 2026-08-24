@@ -7,7 +7,7 @@ export default function AdminLoginPage() {
   const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+    <div className="admin-shell flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm">
         <p className="text-center text-2xl font-extrabold text-brand">
           Quarta Parede

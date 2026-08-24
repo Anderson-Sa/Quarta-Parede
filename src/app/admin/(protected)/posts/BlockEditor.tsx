@@ -579,7 +579,7 @@ export function BlockEditor({
                     key={type}
                     type="button"
                     onClick={() => addBlock(type)}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground/80 hover:bg-white/5"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground/80 hover:bg-foreground/5"
                   >
                     <Icon className="h-4 w-4" /> {label}
                   </button>
