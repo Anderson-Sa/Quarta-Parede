@@ -20,18 +20,12 @@ export async function Header() {
             <Image
               src={settings.logoUrl}
               alt={settings.siteName}
-              width={40}
-              height={40}
+              width={112}
+              height={112}
               unoptimized
-              className="h-10 w-10 shrink-0 rounded object-contain"
+              className="h-24 w-24 shrink-0 object-contain"
             />
           )}
-          <div>
-            <span className="block text-2xl font-extrabold tracking-tight text-brand">
-              {settings.siteName}
-            </span>
-            <p className="mt-1 text-sm text-foreground/60">{settings.slogan}</p>
-          </div>
         </Link>
 
         <div className="flex items-center gap-4">
