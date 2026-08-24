@@ -16,21 +16,35 @@ export async function updateAppearanceSettings(
     fontFamily: String(formData.get("fontFamily") ?? ""),
     homeSectionOrder: String(formData.get("homeSectionOrder") ?? ""),
     destaquesLayout: String(formData.get("destaquesLayout") ?? ""),
+    outrosLayout: String(formData.get("outrosLayout") ?? ""),
+    ultimasLayout: String(formData.get("ultimasLayout") ?? ""),
   });
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
-  const { brandColor, accentColor, fontFamily, homeSectionOrder, destaquesLayout } = parsed.data;
+  const {
+    brandColor,
+    accentColor,
+    fontFamily,
+    homeSectionOrder,
+    destaquesLayout,
+    outrosLayout,
+    ultimasLayout,
+  } = parsed.data;
 
   const current = await prisma.siteSettings.findFirst();
+  const data = {
+    brandColor,
+    accentColor,
+    fontFamily,
+    homeSectionOrder,
+    destaquesLayout,
+    outrosLayout,
+    ultimasLayout,
+  };
 
   if (current) {
-    await prisma.siteSettings.update({
-      where: { id: current.id },
-      data: { brandColor, accentColor, fontFamily, homeSectionOrder, destaquesLayout },
-    });
+    await prisma.siteSettings.update({ where: { id: current.id }, data });
   } else {
-    await prisma.siteSettings.create({
-      data: { brandColor, accentColor, fontFamily, homeSectionOrder, destaquesLayout },
-    });
+    await prisma.siteSettings.create({ data });
   }
 
   revalidatePath("/admin/aparencia");

@@ -24,6 +24,10 @@ model SiteSettings {
   homeSectionOrder String   @default("[{\"id\":\"destaques\",\"visible\":true},{\"id\":\"outros\",\"visible\":true},{\"id\":\"ultimas\",\"visible\":true}]")
   // One of the DESTAQUES_LAYOUT_VALUES in src/lib/homeSections.ts.
   destaquesLayout  String   @default("grid")
+  // One of the OUTROS_LAYOUT_VALUES in src/lib/homeSections.ts.
+  outrosLayout     String   @default("carrossel")
+  // One of the ULTIMAS_LAYOUT_VALUES in src/lib/homeSections.ts.
+  ultimasLayout    String   @default("grid")
   updatedAt        DateTime @updatedAt
 }
 

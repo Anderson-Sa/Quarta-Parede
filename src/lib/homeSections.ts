@@ -29,11 +29,35 @@ export const DESTAQUES_LAYOUT_OPTIONS = [
   { value: "duplo", label: "Duplo Destaque" },
   { value: "lista", label: "Lista Horizontal" },
   { value: "carrossel", label: "Carrossel" },
+  { value: "hero", label: "Hero Full-width" },
+  { value: "editorial", label: "Editorial" },
 ] as const;
 export type DestaquesLayoutValue = (typeof DESTAQUES_LAYOUT_OPTIONS)[number]["value"];
 export const DESTAQUES_LAYOUT_VALUES = DESTAQUES_LAYOUT_OPTIONS.map((option) => option.value) as [
   DestaquesLayoutValue,
   ...DestaquesLayoutValue[],
+];
+
+export const OUTROS_LAYOUT_OPTIONS = [
+  { value: "carrossel", label: "Carrossel" },
+  { value: "grid", label: "Grid Compacto" },
+  { value: "lista", label: "Lista Horizontal" },
+] as const;
+export type OutrosLayoutValue = (typeof OUTROS_LAYOUT_OPTIONS)[number]["value"];
+export const OUTROS_LAYOUT_VALUES = OUTROS_LAYOUT_OPTIONS.map((option) => option.value) as [
+  OutrosLayoutValue,
+  ...OutrosLayoutValue[],
+];
+
+export const ULTIMAS_LAYOUT_OPTIONS = [
+  { value: "grid", label: "Grid" },
+  { value: "lista", label: "Lista Horizontal" },
+  { value: "carrossel", label: "Carrossel" },
+] as const;
+export type UltimasLayoutValue = (typeof ULTIMAS_LAYOUT_OPTIONS)[number]["value"];
+export const ULTIMAS_LAYOUT_VALUES = ULTIMAS_LAYOUT_OPTIONS.map((option) => option.value) as [
+  UltimasLayoutValue,
+  ...UltimasLayoutValue[],
 ];
 
 /** Parses the JSON-encoded homeSectionOrder column. Falls back to the

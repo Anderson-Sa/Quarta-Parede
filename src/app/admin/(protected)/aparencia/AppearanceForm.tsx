@@ -22,10 +22,14 @@ import { Eye, EyeOff, GripVertical } from "lucide-react";
 import {
   DESTAQUES_LAYOUT_OPTIONS,
   FONT_OPTIONS,
+  OUTROS_LAYOUT_OPTIONS,
+  ULTIMAS_LAYOUT_OPTIONS,
   type DestaquesLayoutValue,
   type FontFamilyValue,
   type HomeSection,
   type HomeSectionId,
+  type OutrosLayoutValue,
+  type UltimasLayoutValue,
 } from "@/lib/homeSections";
 import { updateAppearanceSettings, type AppearanceFormState } from "./actions";
 
@@ -120,8 +124,15 @@ function SortableSectionRow({ section, onToggle }: { section: HomeSection; onTog
   );
 }
 
-/** Small CSS-only mockup illustrating the shape of each Destaques layout option. */
-function DestaquesLayoutThumb({ layout }: { layout: DestaquesLayoutValue }) {
+/** Small CSS-only mockup illustrating the shape of a layout option. Shared by
+ * the Destaques/Outros posts/Últimas pickers — the layout value spaces
+ * overlap (grid/lista/carrossel are common to all three), so one component
+ * covers every case across the three sections. */
+function LayoutThumb({
+  layout,
+}: {
+  layout: DestaquesLayoutValue | OutrosLayoutValue | UltimasLayoutValue;
+}) {
   if (layout === "duplo") {
     return (
       <div className="flex h-14 gap-1">
@@ -151,6 +162,33 @@ function DestaquesLayoutThumb({ layout }: { layout: DestaquesLayoutValue }) {
       </div>
     );
   }
+  if (layout === "hero") {
+    return (
+      <div className="flex h-14 flex-col gap-1">
+        <div className="h-2/3 rounded bg-foreground/20" />
+        <div className="flex h-1/3 gap-1">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex-1 rounded bg-foreground/20" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (layout === "editorial") {
+    return (
+      <div className="flex h-14 gap-1">
+        <div className="flex w-1/4 flex-col gap-1">
+          <div className="h-1/2 rounded bg-foreground/20" />
+          <div className="h-1/2 rounded bg-foreground/20" />
+        </div>
+        <div className="w-1/2 rounded bg-foreground/20" />
+        <div className="flex w-1/4 flex-col gap-1">
+          <div className="h-1/2 rounded bg-foreground/20" />
+          <div className="h-1/2 rounded bg-foreground/20" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex h-14 gap-1">
       <div className="w-1/2 rounded bg-foreground/20" />
@@ -172,6 +210,8 @@ export function AppearanceForm({
     fontFamily: FontFamilyValue;
     homeSections: HomeSection[];
     destaquesLayout: DestaquesLayoutValue;
+    outrosLayout: OutrosLayoutValue;
+    ultimasLayout: UltimasLayoutValue;
   };
 }) {
   const [state, formAction, pending] = useActionState<AppearanceFormState, FormData>(
@@ -185,6 +225,8 @@ export function AppearanceForm({
   const [destaquesLayout, setDestaquesLayout] = useState<DestaquesLayoutValue>(
     settings.destaquesLayout,
   );
+  const [outrosLayout, setOutrosLayout] = useState<OutrosLayoutValue>(settings.outrosLayout);
+  const [ultimasLayout, setUltimasLayout] = useState<UltimasLayoutValue>(settings.ultimasLayout);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -252,7 +294,53 @@ export function AppearanceForm({
                     : "border-surface-border hover:border-brand/50"
                 }`}
               >
-                <DestaquesLayoutThumb layout={option.value} />
+                <LayoutThumb layout={option.value} />
+                <p className="mt-2 text-xs font-medium text-foreground/70">{option.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-foreground/50">
+            Layout de Outros posts
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {OUTROS_LAYOUT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setOutrosLayout(option.value)}
+                className={`rounded-md border p-3 text-left transition-colors ${
+                  outrosLayout === option.value
+                    ? "border-brand bg-brand/10"
+                    : "border-surface-border hover:border-brand/50"
+                }`}
+              >
+                <LayoutThumb layout={option.value} />
+                <p className="mt-2 text-xs font-medium text-foreground/70">{option.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-foreground/50">
+            Layout de Últimas
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {ULTIMAS_LAYOUT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setUltimasLayout(option.value)}
+                className={`rounded-md border p-3 text-left transition-colors ${
+                  ultimasLayout === option.value
+                    ? "border-brand bg-brand/10"
+                    : "border-surface-border hover:border-brand/50"
+                }`}
+              >
+                <LayoutThumb layout={option.value} />
                 <p className="mt-2 text-xs font-medium text-foreground/70">{option.label}</p>
               </button>
             ))}
@@ -302,6 +390,8 @@ export function AppearanceForm({
         <input type="hidden" name="fontFamily" value={fontFamily} readOnly />
         <input type="hidden" name="homeSectionOrder" value={JSON.stringify(sections)} readOnly />
         <input type="hidden" name="destaquesLayout" value={destaquesLayout} readOnly />
+        <input type="hidden" name="outrosLayout" value={outrosLayout} readOnly />
+        <input type="hidden" name="ultimasLayout" value={ultimasLayout} readOnly />
       </div>
 
       <div className="space-y-3">

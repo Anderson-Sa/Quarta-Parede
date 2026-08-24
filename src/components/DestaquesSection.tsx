@@ -1,8 +1,6 @@
-import Link from "next/link";
-import Image from "next/image";
 import { FeaturedPostCard } from "@/components/FeaturedPostCard";
 import { PostCarousel } from "@/components/PostCarousel";
-import { formatDate } from "@/lib/format";
+import { PostListRows } from "@/components/PostListRow";
 import type { DestaquesLayoutValue } from "@/lib/homeSections";
 import type { Post, Category } from "@/generated/prisma/client";
 
@@ -31,40 +29,46 @@ export function DestaquesSection({
   }
 
   if (layout === "lista") {
-    return (
-      <div className="flex flex-col divide-y divide-surface-border rounded-lg border border-surface-border">
-        {posts.map((post) => (
-          <Link
-            key={post.id}
-            href={`/post/${post.slug}`}
-            className="group flex items-center gap-4 p-4 hover:bg-surface-muted"
-          >
-            <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md bg-surface-muted">
-              {post.coverImageUrl && (
-                <Image
-                  src={post.coverImageUrl}
-                  alt={post.coverImageAlt ?? ""}
-                  fill
-                  unoptimized
-                  sizes="96px"
-                  className="object-cover"
-                />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 font-bold group-hover:text-brand">{post.title}</p>
-              <p className="mt-1 text-xs text-foreground/40">
-                {formatDate(post.publishedAt ?? post.createdAt)}
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    );
+    return <PostListRows posts={posts} />;
   }
 
   if (layout === "carrossel") {
     return <PostCarousel posts={posts} categories={categories} />;
+  }
+
+  if (layout === "hero") {
+    return (
+      <div className="space-y-4">
+        <FeaturedPostCard post={first} className="aspect-[21/9]" />
+        {rest.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {rest.map((post) => (
+              <FeaturedPostCard key={post.id} post={post} compact className="aspect-video" />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (layout === "editorial") {
+    const left = rest.filter((_, i) => i % 2 === 0);
+    const right = rest.filter((_, i) => i % 2 === 1);
+    return (
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_2fr_1fr]">
+        <div className="order-2 flex flex-col gap-4 lg:order-1">
+          {left.map((post) => (
+            <FeaturedPostCard key={post.id} post={post} compact className="aspect-video" />
+          ))}
+        </div>
+        <FeaturedPostCard post={first} className="order-1 aspect-[4/3] lg:order-2" />
+        <div className="order-3 flex flex-col gap-4">
+          {right.map((post) => (
+            <FeaturedPostCard key={post.id} post={post} compact className="aspect-video" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

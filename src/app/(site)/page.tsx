@@ -1,8 +1,8 @@
 import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
 import { DestaquesSection } from "@/components/DestaquesSection";
-import { PostListCard } from "@/components/PostListCard";
-import { PostCarousel } from "@/components/PostCarousel";
+import { OutrosSection } from "@/components/OutrosSection";
+import { UltimasSection } from "@/components/UltimasSection";
 import { getCategories } from "@/lib/categories";
 import { publicPostWhere } from "@/lib/publicPosts";
 import { getSiteSettings, type HomeSectionId } from "@/lib/siteSettings";
@@ -57,7 +57,11 @@ export default async function HomePage() {
           <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
             Outros posts
           </h2>
-          <PostCarousel posts={carouselPosts} categories={categories} />
+          <OutrosSection
+            posts={carouselPosts}
+            categories={categories}
+            layout={settings.outrosLayout}
+          />
         </section>
       ) : null,
     ultimas:
@@ -66,11 +70,7 @@ export default async function HomePage() {
           <h2 className="mb-6 text-2xl font-extrabold uppercase tracking-wide">
             Últimas
           </h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {latest.map((post) => (
-              <PostListCard key={post.id} post={post} />
-            ))}
-          </div>
+          <UltimasSection posts={latest} categories={categories} layout={settings.ultimasLayout} />
         </section>
       ) : null,
   };

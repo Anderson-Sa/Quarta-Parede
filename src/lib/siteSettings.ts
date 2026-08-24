@@ -5,6 +5,8 @@ import {
   parseHomeSections,
   type DestaquesLayoutValue,
   type FontFamilyValue,
+  type OutrosLayoutValue,
+  type UltimasLayoutValue,
 } from "@/lib/homeSections";
 
 export * from "@/lib/homeSections";
@@ -20,6 +22,8 @@ export const DEFAULT_SITE_SETTINGS = {
   fontFamily: "geist" as FontFamilyValue,
   homeSections: DEFAULT_HOME_SECTIONS,
   destaquesLayout: "grid" as DestaquesLayoutValue,
+  outrosLayout: "carrossel" as OutrosLayoutValue,
+  ultimasLayout: "grid" as UltimasLayoutValue,
 };
 
 export const getSiteSettings = cache(async () => {
@@ -35,5 +39,7 @@ export const getSiteSettings = cache(async () => {
     fontFamily: settings.fontFamily as FontFamilyValue,
     homeSections: parseHomeSections(settings.homeSectionOrder),
     destaquesLayout: settings.destaquesLayout as DestaquesLayoutValue,
+    outrosLayout: settings.outrosLayout as OutrosLayoutValue,
+    ultimasLayout: settings.ultimasLayout as UltimasLayoutValue,
   };
 });
