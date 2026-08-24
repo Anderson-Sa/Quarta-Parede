@@ -5,6 +5,7 @@ import { getCategories } from "@/lib/categories";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { NavLinks } from "@/components/NavLinks";
 import { SearchBar } from "@/components/SearchBar";
+import { MobileNav } from "@/components/MobileNav";
 
 export async function Header() {
   const [categories, settings] = await Promise.all([
@@ -14,21 +15,21 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-surface-border bg-gradient-to-br from-brand-dark/30 via-fuchsia-600/15 to-background backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="flex items-center gap-3">
           {settings.logoUrl && (
             <Image
               src={settings.logoUrl}
               alt={settings.siteName}
-              width={112}
-              height={112}
+              width={80}
+              height={80}
               unoptimized
-              className="h-24 w-24 shrink-0 object-contain"
+              className="h-20 w-20 shrink-0 object-contain"
             />
           )}
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="hidden items-center gap-4 sm:flex">
           <nav className="overflow-x-auto">
             <NavLinks categories={categories} />
           </nav>
@@ -36,6 +37,8 @@ export async function Header() {
             <SearchBar />
           </Suspense>
         </div>
+
+        <MobileNav categories={categories} />
       </div>
     </header>
   );

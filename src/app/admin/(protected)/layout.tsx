@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ExternalLink, LogOut } from "lucide-react";
 import { isAdminSessionValid } from "@/lib/adminSession";
 import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/siteSettings";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { ThemeToggle } from "@/components/admin/ThemeToggle";
 import { logout } from "./actions";
@@ -11,14 +13,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const authenticated = await isAdminSessionValid();
   if (!authenticated) redirect("/admin/login");
 
-  const pendingComments = await prisma.comment.count({ where: { approved: false } });
+  const [pendingComments, settings] = await Promise.all([
+    prisma.comment.count({ where: { approved: false } }),
+    getSiteSettings(),
+  ]);
 
   return (
     <div className="admin-shell min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-surface-border bg-background/95 backdrop-blur">
         <div className="flex items-center justify-between px-6 py-3">
-          <Link href="/admin" className="text-xl font-extrabold text-brand">
-            Quarta Parede Admin
+          <Link href="/admin" className="flex items-center gap-2">
+            {settings.logoUrl ? (
+              <Image
+                src={settings.logoUrl}
+                alt={settings.siteName}
+                width={40}
+                height={40}
+                unoptimized
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+            ) : (
+              <span className="text-xl font-extrabold text-brand">{settings.siteName} Admin</span>
+            )}
           </Link>
           <div className="flex items-center gap-4 text-sm">
             <ThemeToggle />
