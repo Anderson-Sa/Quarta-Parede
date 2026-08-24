@@ -20,14 +20,23 @@ const analyticsScriptOrigin = (() => {
 // allows any https origin because coverImageUrl/logoUrl are admin-editable
 // plain URLs (not restricted to a known set of hosts), plus data: for the
 // base64 SVG placeholders generated at seed time.
+// The "socialEmbed" block (see src/components/SocialEmbedWidget.tsx) embeds
+// public Instagram/Threads posts via each platform's official embed.js
+// widget script, since their /embed endpoint sends X-Frame-Options: DENY
+// and can't be framed directly. X/Twitter's embed endpoint has no such
+// restriction and is framed directly with no extra script.
+const socialEmbedScriptOrigins = "https://www.instagram.com https://www.threads.net";
+const socialEmbedFrameOrigins =
+  "https://www.instagram.com https://www.threads.net https://platform.twitter.com";
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${analyticsScriptOrigin ? ` ${analyticsScriptOrigin}` : ""};
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${analyticsScriptOrigin ? ` ${analyticsScriptOrigin}` : ""} ${socialEmbedScriptOrigins};
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https:;
   font-src 'self' data:;
   connect-src 'self'${analyticsScriptOrigin ? ` ${analyticsScriptOrigin}` : ""};
-  frame-src 'self' https://www.youtube.com https://player.vimeo.com;
+  frame-src 'self' https://www.youtube.com https://player.vimeo.com ${socialEmbedFrameOrigins};
   object-src 'none';
   base-uri 'self';
   form-action 'self';

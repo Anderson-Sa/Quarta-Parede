@@ -36,6 +36,7 @@ import {
   MousePointerClick,
   Plus,
   Quote,
+  Share2,
   Sparkles,
   SquareCode,
   Star,
@@ -46,9 +47,11 @@ import {
   X,
 } from "lucide-react";
 import { BlockRenderer } from "@/components/BlockRenderer";
+import { SocialEmbedWidget } from "@/components/SocialEmbedWidget";
 import {
   BLOCK_LABELS,
   createBlock,
+  getSocialEmbedUrl,
   getVideoEmbedUrl,
   parseContent,
   serializeBlocks,
@@ -59,6 +62,7 @@ import {
   type GalleryBlockData,
   type HighlightBlockData,
   type RatingBlockData,
+  type SocialEmbedBlockData,
   type VideoBlockData,
 } from "@/lib/contentBlocks";
 import { uploadPostImage } from "./actions";
@@ -75,6 +79,7 @@ const blockTypeOptions: { type: BlockType; icon: typeof Type; label: string }[] 
   { type: "highlight", icon: Sparkles, label: BLOCK_LABELS.highlight },
   { type: "rating", icon: Star, label: BLOCK_LABELS.rating },
   { type: "video", icon: Video, label: BLOCK_LABELS.video },
+  { type: "socialEmbed", icon: Share2, label: BLOCK_LABELS.socialEmbed },
   { type: "divider", icon: Minus, label: BLOCK_LABELS.divider },
 ];
 
@@ -570,6 +575,63 @@ function VideoEditor({ data, onChange }: { data: VideoBlockData; onChange: (next
   );
 }
 
+const socialPlatformLabel: Record<string, string> = {
+  instagram: "Instagram",
+  x: "X (Twitter)",
+  threads: "Threads",
+};
+
+function SocialEmbedEditor({
+  data,
+  onChange,
+}: {
+  data: SocialEmbedBlockData;
+  onChange: (next: SocialEmbedBlockData) => void;
+}) {
+  const embed = data.url ? getSocialEmbedUrl(data.url) : null;
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className={labelClass}>Link do post (Instagram, X ou Threads)</label>
+        <input
+          value={data.url}
+          onChange={(event) => onChange({ url: event.target.value })}
+          maxLength={500}
+          placeholder="https://www.instagram.com/p/..."
+          className={inputClass}
+        />
+        <p className="mt-1.5 text-xs text-foreground/40">
+          Cole o link de um post público. Funciona com instagram.com/p/ ou /reel/, x.com ou
+          twitter.com com /status/, e threads.net com /post/.
+        </p>
+      </div>
+      {data.url && !embed && (
+        <p className="text-xs text-red-400">Não foi possível reconhecer esse link como um post do Instagram, X ou Threads.</p>
+      )}
+      {embed && (
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-foreground/50">
+            Prévia ({socialPlatformLabel[embed.platform]}):
+          </p>
+          <div className="flex justify-center overflow-hidden rounded-md border border-surface-border p-2">
+            {embed.platform === "x" ? (
+              <iframe
+                src={embed.src}
+                className="w-full max-w-[400px]"
+                style={{ height: 500 }}
+                allow="encrypted-media; picture-in-picture"
+                scrolling="no"
+              />
+            ) : (
+              <SocialEmbedWidget platform={embed.platform} permalink={embed.permalink} />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BlockFields({
   block,
   onChange,
@@ -596,6 +658,8 @@ function BlockFields({
       return <RatingEditor data={block.data} onChange={onChange} />;
     case "video":
       return <VideoEditor data={block.data} onChange={onChange} />;
+    case "socialEmbed":
+      return <SocialEmbedEditor data={block.data} onChange={onChange} />;
   }
 }
 

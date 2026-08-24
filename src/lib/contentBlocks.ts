@@ -29,6 +29,9 @@ export type RatingBlockData = {
 /** A YouTube or Vimeo URL, resolved to an embeddable iframe src at render
  * time by getVideoEmbedUrl — see that function for supported URL shapes. */
 export type VideoBlockData = { url: string };
+/** A public Instagram/X (Twitter)/Threads post URL, resolved to an
+ * embeddable iframe src at render time by getSocialEmbedUrl. */
+export type SocialEmbedBlockData = { url: string };
 
 export type ContentBlock =
   | { id: string; type: "markdown"; data: MarkdownBlockData }
@@ -38,7 +41,8 @@ export type ContentBlock =
   | { id: string; type: "highlight"; data: HighlightBlockData }
   | { id: string; type: "divider"; data: DividerBlockData }
   | { id: string; type: "rating"; data: RatingBlockData }
-  | { id: string; type: "video"; data: VideoBlockData };
+  | { id: string; type: "video"; data: VideoBlockData }
+  | { id: string; type: "socialEmbed"; data: SocialEmbedBlockData };
 
 export type BlockType = ContentBlock["type"];
 
@@ -51,6 +55,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   divider: "Divisor",
   rating: "Nota / Ficha técnica",
   video: "Vídeo (YouTube/Vimeo)",
+  socialEmbed: "Post social (Instagram/X/Threads)",
 };
 
 const MARKER = "__qpBlocks";
@@ -80,6 +85,8 @@ export function createBlock(type: BlockType): ContentBlock {
       return { id, type, data: { title: "", score: 0, fields: [] } };
     case "video":
       return { id, type, data: { url: "" } };
+    case "socialEmbed":
+      return { id, type, data: { url: "" } };
   }
 }
 
@@ -89,9 +96,17 @@ function isValidBlock(value: unknown): value is ContentBlock {
   return (
     typeof block.id === "string" &&
     typeof block.type === "string" &&
-    ["markdown", "columns", "cta", "gallery", "highlight", "divider", "rating", "video"].includes(
-      block.type,
-    ) &&
+    [
+      "markdown",
+      "columns",
+      "cta",
+      "gallery",
+      "highlight",
+      "divider",
+      "rating",
+      "video",
+      "socialEmbed",
+    ].includes(block.type) &&
     typeof block.data === "object" &&
     block.data !== null
   );
@@ -158,6 +173,8 @@ export function blocksToPlainMarkdown(blocks: ContentBlock[]): string {
             .join("\n");
         case "video":
           return "";
+        case "socialEmbed":
+          return "";
       }
     })
     .join("\n\n");
@@ -204,6 +221,56 @@ export function getVideoEmbedUrl(url: string): string | null {
   if (host === "player.vimeo.com") {
     const match = parsed.pathname.match(/^\/video\/(\d+)/);
     return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+  }
+  return null;
+}
+
+export type SocialPlatform = "instagram" | "x" | "threads";
+
+/**
+ * Resolves a public Instagram/X (Twitter)/Threads post URL to embeddable
+ * data. Instagram and Threads both send `X-Frame-Options: DENY` on their
+ * `/embed` endpoint, so those can't be framed directly — instead we return
+ * the normalized post permalink, which <SocialEmbedWidget> turns into an
+ * iframe via each platform's own embed.js widget script. X/Twitter's embed
+ * endpoint has no such restriction, so it's framed directly with no
+ * external script needed. Returns null for anything else so callers can
+ * fall back to a plain link instead of an arbitrary iframe src.
+ *
+ * Supported shapes:
+ * - instagram.com/p/ID, instagram.com/reel/ID
+ * - threads.net/@user/post/ID (also threads.com)
+ * - x.com/user/status/ID, twitter.com/user/status/ID
+ */
+export function getSocialEmbedUrl(
+  url: string,
+): { platform: "instagram" | "threads"; permalink: string } | { platform: "x"; src: string } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(parsed.protocol)) return null;
+  const host = parsed.hostname.replace(/^www\./, "");
+
+  if (host === "instagram.com") {
+    const match = parsed.pathname.match(/^\/(p|reel|reels)\/([^/]+)/);
+    if (!match) return null;
+    return { platform: "instagram", permalink: `https://www.instagram.com/${match[1]}/${match[2]}/` };
+  }
+  if (host === "threads.net" || host === "threads.com") {
+    const match = parsed.pathname.match(/^\/(@[^/]+)\/post\/([^/]+)/);
+    if (!match) return null;
+    return { platform: "threads", permalink: `https://www.threads.net/${match[1]}/post/${match[2]}` };
+  }
+  if (host === "x.com" || host === "twitter.com") {
+    const match = parsed.pathname.match(/\/status\/(\d+)/);
+    if (!match) return null;
+    return {
+      platform: "x",
+      src: `https://platform.twitter.com/embed/Tweet.html?id=${match[1]}&theme=dark&dnt=true`,
+    };
   }
   return null;
 }

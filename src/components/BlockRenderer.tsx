@@ -5,7 +5,13 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeSlug from "rehype-slug";
 import rehypeHighlight from "rehype-highlight";
 import { AlertTriangle, ExternalLink, Info, Lightbulb, Quote } from "lucide-react";
-import { getVideoEmbedUrl, type ContentBlock, type HighlightBlockData } from "@/lib/contentBlocks";
+import {
+  getSocialEmbedUrl,
+  getVideoEmbedUrl,
+  type ContentBlock,
+  type HighlightBlockData,
+} from "@/lib/contentBlocks";
+import { SocialEmbedWidget } from "./SocialEmbedWidget";
 
 // Allow <video>/<source> in Markdown blocks (used for embedded clips) on top
 // of the default safe HTML allowlist. Everything else (scripts, event
@@ -41,6 +47,11 @@ const ctaStyleClass: Record<string, string> = {
   secondary: "bg-white/10 text-foreground hover:bg-white/20",
   outline: "border border-brand text-brand hover:bg-brand/10",
 };
+
+// Fixed height for the X/Twitter embed iframe, which (unlike Instagram and
+// Threads) has no framing restriction and needs no widget script — see
+// getSocialEmbedUrl.
+const X_EMBED_HEIGHT = 560;
 
 const highlightConfig: Record<HighlightBlockData["icon"], { icon: typeof Info; className: string }> = {
   info: { icon: Info, className: "border-accent/50 bg-accent/5 text-accent" },
@@ -167,6 +178,25 @@ function BlockView({ block }: { block: ContentBlock }) {
           />
         </div>
       );
+    }
+
+    case "socialEmbed": {
+      const embed = getSocialEmbedUrl(block.data.url);
+      if (!embed) return null;
+      if (embed.platform === "x") {
+        return (
+          <div className="flex justify-center">
+            <iframe
+              src={embed.src}
+              className="w-full max-w-[540px] overflow-hidden rounded-lg border border-surface-border"
+              style={{ height: X_EMBED_HEIGHT }}
+              allow="encrypted-media; picture-in-picture"
+              scrolling="no"
+            />
+          </div>
+        );
+      }
+      return <SocialEmbedWidget platform={embed.platform} permalink={embed.permalink} />;
     }
   }
 }
