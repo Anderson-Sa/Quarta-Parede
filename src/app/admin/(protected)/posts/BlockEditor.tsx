@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type KeyboardEvent } from "react";
 import {
   DndContext,
   closestCenter,
@@ -25,21 +25,31 @@ import {
   Copy,
   GripVertical,
   Heading2,
+  Heading3,
   ImagePlus,
   Images,
   Italic,
   Link2,
+  List,
+  ListOrdered,
+  Minus,
   MousePointerClick,
   Plus,
+  Quote,
   Sparkles,
+  SquareCode,
+  Star,
+  Strikethrough,
   Trash2,
   Type,
+  Video,
   X,
 } from "lucide-react";
 import { BlockRenderer } from "@/components/BlockRenderer";
 import {
   BLOCK_LABELS,
   createBlock,
+  getVideoEmbedUrl,
   parseContent,
   serializeBlocks,
   type BlockType,
@@ -48,6 +58,8 @@ import {
   type CtaBlockData,
   type GalleryBlockData,
   type HighlightBlockData,
+  type RatingBlockData,
+  type VideoBlockData,
 } from "@/lib/contentBlocks";
 import { uploadPostImage } from "./actions";
 
@@ -61,9 +73,24 @@ const blockTypeOptions: { type: BlockType; icon: typeof Type; label: string }[] 
   { type: "cta", icon: MousePointerClick, label: BLOCK_LABELS.cta },
   { type: "gallery", icon: Images, label: BLOCK_LABELS.gallery },
   { type: "highlight", icon: Sparkles, label: BLOCK_LABELS.highlight },
+  { type: "rating", icon: Star, label: BLOCK_LABELS.rating },
+  { type: "video", icon: Video, label: BLOCK_LABELS.video },
+  { type: "divider", icon: Minus, label: BLOCK_LABELS.divider },
 ];
 
-type ToolbarAction = "bold" | "italic" | "heading" | "link" | "image" | "code";
+type ToolbarAction =
+  | "bold"
+  | "italic"
+  | "heading"
+  | "heading3"
+  | "link"
+  | "image"
+  | "code"
+  | "codeBlock"
+  | "bulletList"
+  | "numberedList"
+  | "quote"
+  | "strikethrough";
 
 /** Markdown textarea + formatting toolbar, self-contained so each block
  * instance owns its own ref/selection state (no shared textarea to fight
@@ -116,8 +143,14 @@ function MarkdownField({
       case "italic":
         insertAroundSelection("_", "_", "itálico");
         break;
+      case "strikethrough":
+        insertAroundSelection("~~", "~~", "riscado");
+        break;
       case "heading":
         insertLinePrefix("## ");
+        break;
+      case "heading3":
+        insertLinePrefix("### ");
         break;
       case "link":
         insertAroundSelection("[", "](https://)", "texto do link");
@@ -128,16 +161,53 @@ function MarkdownField({
       case "code":
         insertAroundSelection("`", "`", "código");
         break;
+      case "codeBlock":
+        insertAroundSelection("```\n", "\n```", "código");
+        break;
+      case "bulletList":
+        insertLinePrefix("- ");
+        break;
+      case "numberedList":
+        insertLinePrefix("1. ");
+        break;
+      case "quote":
+        insertLinePrefix("> ");
+        break;
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    const isMod = event.metaKey || event.ctrlKey;
+    if (!isMod) return;
+    switch (event.key.toLowerCase()) {
+      case "b":
+        event.preventDefault();
+        runToolbarAction("bold");
+        break;
+      case "i":
+        event.preventDefault();
+        runToolbarAction("italic");
+        break;
+      case "k":
+        event.preventDefault();
+        runToolbarAction("link");
+        break;
     }
   }
 
   const toolbarButtons: { label: string; icon: typeof Bold; action: ToolbarAction }[] = [
     { label: "Negrito", icon: Bold, action: "bold" },
     { label: "Itálico", icon: Italic, action: "italic" },
-    { label: "Título", icon: Heading2, action: "heading" },
+    { label: "Riscado", icon: Strikethrough, action: "strikethrough" },
+    { label: "Título 2", icon: Heading2, action: "heading" },
+    { label: "Título 3", icon: Heading3, action: "heading3" },
+    { label: "Lista", icon: List, action: "bulletList" },
+    { label: "Lista numerada", icon: ListOrdered, action: "numberedList" },
+    { label: "Citação", icon: Quote, action: "quote" },
     { label: "Link", icon: Link2, action: "link" },
     { label: "Imagem", icon: ImagePlus, action: "image" },
-    { label: "Código", icon: Code, action: "code" },
+    { label: "Código inline", icon: Code, action: "code" },
+    { label: "Bloco de código", icon: SquareCode, action: "codeBlock" },
   ];
 
   return (
@@ -162,6 +232,7 @@ function MarkdownField({
         maxLength={20000}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKeyDown}
         className={`${inputClass} font-mono`}
       />
     </div>
@@ -380,6 +451,125 @@ function HighlightEditor({
   );
 }
 
+function DividerEditor() {
+  return (
+    <p className="text-xs text-foreground/40">
+      Uma linha divisória simples, sem opções — apenas para separar seções do texto.
+    </p>
+  );
+}
+
+function RatingEditor({
+  data,
+  onChange,
+}: {
+  data: RatingBlockData;
+  onChange: (next: RatingBlockData) => void;
+}) {
+  function updateField(index: number, patch: Partial<{ label: string; value: string }>) {
+    const next = data.fields.map((field, i) => (i === index ? { ...field, ...patch } : field));
+    onChange({ ...data, fields: next });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className={labelClass}>Título</label>
+        <input
+          value={data.title}
+          onChange={(event) => onChange({ ...data, title: event.target.value })}
+          maxLength={200}
+          placeholder="Ex: Duna: Parte Dois"
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Nota (0 a 10)</label>
+        <input
+          type="number"
+          min={0}
+          max={10}
+          step={0.1}
+          value={data.score}
+          onChange={(event) => onChange({ ...data, score: Number(event.target.value) })}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Ficha técnica</label>
+        <div className="space-y-2">
+          {data.fields.map((field, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                value={field.label}
+                onChange={(event) => updateField(index, { label: event.target.value })}
+                placeholder="Diretor"
+                maxLength={60}
+                className={`${inputClass} w-1/3`}
+              />
+              <input
+                value={field.value}
+                onChange={(event) => updateField(index, { value: event.target.value })}
+                placeholder="Denis Villeneuve"
+                maxLength={200}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={() => onChange({ ...data, fields: data.fields.filter((_, i) => i !== index) })}
+                className="text-foreground/40 hover:text-red-400"
+                aria-label="Remover campo"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => onChange({ ...data, fields: [...data.fields, { label: "", value: "" }] })}
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+        >
+          <Plus className="h-3.5 w-3.5" /> Adicionar campo
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function VideoEditor({ data, onChange }: { data: VideoBlockData; onChange: (next: VideoBlockData) => void }) {
+  const embedUrl = data.url ? getVideoEmbedUrl(data.url) : null;
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className={labelClass}>URL do vídeo (YouTube ou Vimeo)</label>
+        <input
+          value={data.url}
+          onChange={(event) => onChange({ url: event.target.value })}
+          maxLength={500}
+          placeholder="https://www.youtube.com/watch?v=..."
+          className={inputClass}
+        />
+      </div>
+      {data.url && !embedUrl && (
+        <p className="text-xs text-red-400">
+          Não foi possível reconhecer esse link como um vídeo do YouTube ou Vimeo.
+        </p>
+      )}
+      {embedUrl && (
+        <div className="aspect-video w-full overflow-hidden rounded-md border border-surface-border">
+          <iframe
+            src={embedUrl}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BlockFields({
   block,
   onChange,
@@ -400,6 +590,12 @@ function BlockFields({
       return <GalleryEditor data={block.data} onChange={onChange} />;
     case "highlight":
       return <HighlightEditor data={block.data} onChange={onChange} />;
+    case "divider":
+      return <DividerEditor />;
+    case "rating":
+      return <RatingEditor data={block.data} onChange={onChange} />;
+    case "video":
+      return <VideoEditor data={block.data} onChange={onChange} />;
   }
 }
 

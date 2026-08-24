@@ -18,13 +18,27 @@ export type ColumnsBlockData = { columns: { markdown: string }[] };
 export type CtaBlockData = { label: string; url: string; style: "primary" | "secondary" | "outline" };
 export type GalleryBlockData = { images: { url: string; alt: string }[] };
 export type HighlightBlockData = { icon: "info" | "warning" | "tip" | "quote"; text: string };
+export type DividerBlockData = Record<string, never>;
+/** "Ficha técnica" / review-style rating box: a title, a 0–10 score, and a
+ * freeform list of label/value pairs (Diretor, Estúdio, Ano, Gênero...). */
+export type RatingBlockData = {
+  title: string;
+  score: number;
+  fields: { label: string; value: string }[];
+};
+/** A YouTube or Vimeo URL, resolved to an embeddable iframe src at render
+ * time by getVideoEmbedUrl — see that function for supported URL shapes. */
+export type VideoBlockData = { url: string };
 
 export type ContentBlock =
   | { id: string; type: "markdown"; data: MarkdownBlockData }
   | { id: string; type: "columns"; data: ColumnsBlockData }
   | { id: string; type: "cta"; data: CtaBlockData }
   | { id: string; type: "gallery"; data: GalleryBlockData }
-  | { id: string; type: "highlight"; data: HighlightBlockData };
+  | { id: string; type: "highlight"; data: HighlightBlockData }
+  | { id: string; type: "divider"; data: DividerBlockData }
+  | { id: string; type: "rating"; data: RatingBlockData }
+  | { id: string; type: "video"; data: VideoBlockData };
 
 export type BlockType = ContentBlock["type"];
 
@@ -34,6 +48,9 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   cta: "Botão de ação",
   gallery: "Galeria de imagens",
   highlight: "Caixa de destaque",
+  divider: "Divisor",
+  rating: "Nota / Ficha técnica",
+  video: "Vídeo (YouTube/Vimeo)",
 };
 
 const MARKER = "__qpBlocks";
@@ -57,6 +74,12 @@ export function createBlock(type: BlockType): ContentBlock {
       return { id, type, data: { images: [] } };
     case "highlight":
       return { id, type, data: { icon: "info", text: "" } };
+    case "divider":
+      return { id, type, data: {} };
+    case "rating":
+      return { id, type, data: { title: "", score: 0, fields: [] } };
+    case "video":
+      return { id, type, data: { url: "" } };
   }
 }
 
@@ -66,7 +89,9 @@ function isValidBlock(value: unknown): value is ContentBlock {
   return (
     typeof block.id === "string" &&
     typeof block.type === "string" &&
-    ["markdown", "columns", "cta", "gallery", "highlight"].includes(block.type) &&
+    ["markdown", "columns", "cta", "gallery", "highlight", "divider", "rating", "video"].includes(
+      block.type,
+    ) &&
     typeof block.data === "object" &&
     block.data !== null
   );
@@ -122,7 +147,63 @@ export function blocksToPlainMarkdown(blocks: ContentBlock[]): string {
             .join("\n");
         case "highlight":
           return block.data.text;
+        case "divider":
+          return "";
+        case "rating":
+          return [
+            block.data.title,
+            ...block.data.fields.map((field) => `${field.label}: ${field.value}`),
+          ]
+            .filter(Boolean)
+            .join("\n");
+        case "video":
+          return "";
       }
     })
     .join("\n\n");
+}
+
+/**
+ * Resolves a YouTube or Vimeo watch/share URL to an embeddable iframe src.
+ * Returns null for anything else so callers can fall back to a plain link
+ * instead of embedding an arbitrary (and potentially unsafe) iframe src.
+ *
+ * Supported shapes:
+ * - youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID, youtube.com/embed/ID
+ * - vimeo.com/ID, player.vimeo.com/video/ID
+ */
+export function getVideoEmbedUrl(url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(parsed.protocol)) return null;
+  const host = parsed.hostname.replace(/^www\./, "");
+
+  if (host === "youtu.be") {
+    const id = parsed.pathname.slice(1).split("/")[0];
+    return id ? `https://www.youtube.com/embed/${id}` : null;
+  }
+  if (host === "youtube.com" || host === "m.youtube.com") {
+    if (parsed.pathname === "/watch") {
+      const id = parsed.searchParams.get("v");
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    const shortsMatch = parsed.pathname.match(/^\/shorts\/([^/]+)/);
+    if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}`;
+    const embedMatch = parsed.pathname.match(/^\/embed\/([^/]+)/);
+    if (embedMatch) return `https://www.youtube.com/embed/${embedMatch[1]}`;
+    return null;
+  }
+  if (host === "vimeo.com") {
+    const id = parsed.pathname.slice(1).split("/")[0];
+    return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : null;
+  }
+  if (host === "player.vimeo.com") {
+    const match = parsed.pathname.match(/^\/video\/(\d+)/);
+    return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+  }
+  return null;
 }

@@ -27,6 +27,7 @@ const cspHeader = `
   img-src 'self' data: https:;
   font-src 'self' data:;
   connect-src 'self'${analyticsScriptOrigin ? ` ${analyticsScriptOrigin}` : ""};
+  frame-src 'self' https://www.youtube.com https://player.vimeo.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -37,6 +38,13 @@ const cspHeader = `
   .trim();
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Default Server Action body limit is 1MB, which the post form blows past
+    // as soon as an admin attaches a cover image file (submitted inline with
+    // the rest of the post form as a Server Action, not a separate upload
+    // request). Raised to fit typical unoptimized photo/art file sizes.
+    serverActions: { bodySizeLimit: "10mb" },
+  },
   async headers() {
     return [
       {

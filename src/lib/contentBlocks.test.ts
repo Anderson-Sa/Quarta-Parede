@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   blocksToPlainMarkdown,
   createBlock,
+  getVideoEmbedUrl,
   parseContent,
   serializeBlocks,
   type ContentBlock,
@@ -51,6 +52,9 @@ describe("serializeBlocks / parseContent round-trip", () => {
       createBlock("cta"),
       createBlock("gallery"),
       createBlock("highlight"),
+      createBlock("divider"),
+      createBlock("rating"),
+      createBlock("video"),
     ];
     const raw = serializeBlocks(blocks);
     expect(parseContent(raw)).toEqual(blocks);
@@ -73,6 +77,13 @@ describe("blocksToPlainMarkdown", () => {
       { id: "3", type: "cta", data: { label: "Clique aqui", url: "https://example.com", style: "primary" } },
       { id: "4", type: "gallery", data: { images: [{ url: "/a.png", alt: "uma foto" }] } },
       { id: "5", type: "highlight", data: { icon: "tip", text: "uma dica" } },
+      { id: "6", type: "divider", data: {} },
+      {
+        id: "7",
+        type: "rating",
+        data: { title: "Filme X", score: 8.5, fields: [{ label: "Diretor", value: "Fulano" }] },
+      },
+      { id: "8", type: "video", data: { url: "https://youtu.be/abc123" } },
     ];
     const text = blocksToPlainMarkdown(blocks);
     expect(text).toContain("## Heading");
@@ -81,10 +92,50 @@ describe("blocksToPlainMarkdown", () => {
     expect(text).toContain("[Clique aqui](https://example.com)");
     expect(text).toContain("uma foto");
     expect(text).toContain("uma dica");
+    expect(text).toContain("Filme X");
+    expect(text).toContain("Diretor: Fulano");
   });
 
   it("omits a CTA block with no label", () => {
     const blocks: ContentBlock[] = [{ id: "1", type: "cta", data: { label: "", url: "", style: "primary" } }];
     expect(blocksToPlainMarkdown(blocks)).toBe("");
+  });
+});
+
+describe("getVideoEmbedUrl", () => {
+  it("resolves youtube.com/watch URLs", () => {
+    expect(getVideoEmbedUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(
+      "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    );
+  });
+
+  it("resolves youtu.be short URLs", () => {
+    expect(getVideoEmbedUrl("https://youtu.be/dQw4w9WgXcQ")).toBe(
+      "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    );
+  });
+
+  it("resolves youtube shorts URLs", () => {
+    expect(getVideoEmbedUrl("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe(
+      "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    );
+  });
+
+  it("resolves vimeo.com URLs", () => {
+    expect(getVideoEmbedUrl("https://vimeo.com/76979871")).toBe(
+      "https://player.vimeo.com/video/76979871",
+    );
+  });
+
+  it("returns null for unsupported hosts", () => {
+    expect(getVideoEmbedUrl("https://example.com/video")).toBeNull();
+  });
+
+  it("returns null for javascript: URLs", () => {
+    expect(getVideoEmbedUrl("javascript:alert(1)")).toBeNull();
+  });
+
+  it("returns null for garbage input", () => {
+    expect(getVideoEmbedUrl("not a url")).toBeNull();
   });
 });

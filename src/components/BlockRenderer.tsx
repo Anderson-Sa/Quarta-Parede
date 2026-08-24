@@ -5,7 +5,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import rehypeSlug from "rehype-slug";
 import rehypeHighlight from "rehype-highlight";
 import { AlertTriangle, ExternalLink, Info, Lightbulb, Quote } from "lucide-react";
-import type { ContentBlock, HighlightBlockData } from "@/lib/contentBlocks";
+import { getVideoEmbedUrl, type ContentBlock, type HighlightBlockData } from "@/lib/contentBlocks";
 
 // Allow <video>/<source> in Markdown blocks (used for embedded clips) on top
 // of the default safe HTML allowlist. Everything else (scripts, event
@@ -122,6 +122,49 @@ function BlockView({ block }: { block: ContentBlock }) {
         <div className={`flex gap-3 rounded-lg border-l-4 p-4 ${className}`}>
           <Icon className="mt-0.5 h-5 w-5 shrink-0" />
           <p className="text-sm leading-relaxed text-foreground/90">{block.data.text}</p>
+        </div>
+      );
+    }
+
+    case "divider":
+      return <hr className="border-surface-border" />;
+
+    case "rating": {
+      if (!block.data.title) return null;
+      return (
+        <div className="rounded-lg border border-surface-border bg-white/5 p-5">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-lg font-bold text-foreground">{block.data.title}</h3>
+            <div className="flex shrink-0 items-baseline gap-1 rounded-md bg-brand px-3 py-1.5 text-white">
+              <span className="text-xl font-bold leading-none">{block.data.score}</span>
+              <span className="text-xs opacity-80">/10</span>
+            </div>
+          </div>
+          {block.data.fields.length > 0 && (
+            <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+              {block.data.fields.map((field, index) => (
+                <div key={index} className="flex gap-1.5 text-sm">
+                  <dt className="font-medium text-foreground/50">{field.label}:</dt>
+                  <dd className="text-foreground/90">{field.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      );
+    }
+
+    case "video": {
+      const embedUrl = getVideoEmbedUrl(block.data.url);
+      if (!embedUrl) return null;
+      return (
+        <div className="aspect-video w-full overflow-hidden rounded-lg border border-surface-border">
+          <iframe
+            src={embedUrl}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
       );
     }
