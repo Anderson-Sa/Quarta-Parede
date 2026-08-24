@@ -40,6 +40,7 @@ export default async function MarketingPage() {
               <tr>
                 <th className="px-4 py-3.5 font-semibold">Banner</th>
                 <th className="px-4 py-3.5 font-semibold">Local</th>
+                <th className="px-4 py-3.5 font-semibold">Desempenho</th>
                 <th className="px-4 py-3.5 font-semibold">Período</th>
                 <th className="px-4 py-3.5 font-semibold">Status</th>
                 <th className="px-4 py-3.5" />
@@ -64,6 +65,11 @@ export default async function MarketingPage() {
                   </td>
                   <td className="px-4 py-3.5 text-foreground/60">
                     {PLACEMENT_LABELS[campaign.placement as CampaignPlacementValue]}
+                  </td>
+                  <td className="px-4 py-3.5 text-foreground/60">
+                    {campaign.views.toLocaleString("pt-BR")} visualizações
+                    <br />
+                    {campaign.clicks.toLocaleString("pt-BR")} cliques
                   </td>
                   <td className="px-4 py-3.5 text-foreground/60">
                     {campaign.startDate ? formatDateTime(campaign.startDate) : "Início imediato"}

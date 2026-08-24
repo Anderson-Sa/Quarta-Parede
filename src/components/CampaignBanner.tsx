@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getActiveCampaigns } from "@/lib/campaigns";
+import { prisma } from "@/lib/prisma";
 
 /** Sponsored banner slot rendered on the home page and post pages. Shows the
  * most recently created active campaign (see src/lib/campaigns.ts), or
@@ -9,9 +10,12 @@ export async function CampaignBanner({ location }: { location: "home" | "posts" 
   const campaign = campaigns[0];
   if (!campaign) return null;
 
+  // Best-effort impression counter — not critical if it occasionally races.
+  await prisma.campaign.update({ where: { id: campaign.id }, data: { views: { increment: 1 } } });
+
   return (
     <a
-      href={campaign.linkUrl}
+      href={`/go/${campaign.id}`}
       target="_blank"
       rel="noopener noreferrer sponsored"
       className="group relative block overflow-hidden rounded-xl border border-surface-border bg-surface-muted"

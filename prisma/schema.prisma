@@ -113,6 +113,10 @@ model Campaign {
   active    Boolean   @default(true)
   startDate DateTime?
   endDate   DateTime?
+  // Admin-only performance counters (see src/components/CampaignBanner.tsx and
+  // src/app/go/[id]/route.ts) — never shown on the public site.
+  views     Int       @default(0)
+  clicks    Int       @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
