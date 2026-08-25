@@ -6,6 +6,7 @@ import { publicPostWhere } from "@/lib/publicPosts";
 export const metadata: Metadata = {
   title: "Busca",
   robots: { index: false, follow: true },
+  alternates: { canonical: "/busca" },
 };
 
 /**

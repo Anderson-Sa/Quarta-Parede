@@ -3,6 +3,7 @@ import { getSiteSettings } from "@/lib/siteSettings";
 
 export const metadata: Metadata = {
   title: "Sobre nós",
+  alternates: { canonical: "/sobre" },
 };
 
 export default async function SobrePage() {

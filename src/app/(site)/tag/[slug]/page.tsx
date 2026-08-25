@@ -11,12 +11,19 @@ const PAGE_SIZE = 12;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/tag/[slug]">): Promise<Metadata> {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
   const tag = await prisma.tag.findUnique({ where: { slug } });
   if (!tag) return {};
+  // See the equivalent comment in categoria/[slug]/page.tsx: paginated
+  // listing pages canonicalize to themselves, not to page 1.
+  const canonical =
+    Array.isArray(pageParam) || !pageParam ? `/tag/${tag.slug}` : `/tag/${tag.slug}?page=${pageParam}`;
   return {
     title: `#${tag.name}`,
+    alternates: { canonical },
     openGraph: { type: "website", title: `#${tag.name}`, url: `/tag/${tag.slug}` },
     twitter: { card: "summary", title: `#${tag.name}` },
   };

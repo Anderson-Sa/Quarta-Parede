@@ -64,6 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: settings.footerText,
     alternates: {
+      canonical: "/",
       types: {
         "application/rss+xml": `${siteUrl}/feed.xml`,
       },

@@ -12,12 +12,22 @@ const PAGE_SIZE = 12;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/categoria/[slug]">): Promise<Metadata> {
   const { slug } = await params;
+  const { page: pageParam } = await searchParams;
   const category = await prisma.category.findUnique({ where: { slug } });
   if (!category) return {};
+  // Paginated listing pages canonicalize to themselves (including ?page=N),
+  // not to page 1 — each page shows different posts, so collapsing them
+  // into one canonical would tell search engines to ignore page 2+ content.
+  const canonical =
+    Array.isArray(pageParam) || !pageParam
+      ? `/categoria/${category.slug}`
+      : `/categoria/${category.slug}?page=${pageParam}`;
   return {
     title: category.name,
+    alternates: { canonical },
     openGraph: {
       type: "website",
       title: category.name,

@@ -3,6 +3,7 @@ import { getSiteSettings } from "@/lib/siteSettings";
 
 export const metadata: Metadata = {
   title: "Política de privacidade",
+  alternates: { canonical: "/privacidade" },
 };
 
 export default async function PrivacidadePage() {
