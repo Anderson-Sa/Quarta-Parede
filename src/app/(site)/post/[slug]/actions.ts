@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { commentSchema, firstIssueMessage } from "@/lib/validation";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { isCommentNotificationConfigured, notifyNewComment } from "@/lib/commentNotifications";
 
 export type CommentFormState = { error?: string; success?: boolean } | undefined;
 
@@ -43,6 +44,17 @@ export async function submitComment(
       body: parsed.data.body,
     },
   });
+
+  // Best-effort: an email hiccup should never fail the visitor's comment
+  // submission, so this is fire-and-forget (no await on the network call
+  // blocking the response) and errors are simply not surfaced to the user.
+  if (isCommentNotificationConfigured()) {
+    notifyNewComment({
+      authorName: parsed.data.authorName,
+      body: parsed.data.body,
+      post: { title: post.title, slug: post.slug },
+    }).catch(() => {});
+  }
 
   revalidatePath(`/post/${slug}`);
   return { success: true };

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { SocialLinks } from "@/components/SocialLinks";
+import { NewsletterForm } from "@/components/NewsletterForm";
 
 export async function Footer() {
   const settings = await getSiteSettings();
@@ -22,6 +23,11 @@ export async function Footer() {
         )}
 
         <p className="max-w-md">{settings.footerText}</p>
+
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm font-semibold text-foreground/80">Receba as novidades por e-mail</p>
+          <NewsletterForm />
+        </div>
 
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
           <Link href="/" className="hover:text-brand">
