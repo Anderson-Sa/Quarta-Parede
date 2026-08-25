@@ -40,7 +40,11 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
     if (!confirm(`Excluir ${selected.size} post(s) selecionado(s)?`)) return;
     const ids = [...selected];
     startTransition(async () => {
-      await deletePosts(ids);
+      const result = await deletePosts(ids);
+      if (result?.error) {
+        alert(result.error);
+        return;
+      }
       setSelected(new Set());
     });
   }

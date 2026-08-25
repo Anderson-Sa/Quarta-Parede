@@ -7,9 +7,21 @@ import { EmptyState } from "@/components/admin/EmptyState";
 import { TrafficChart } from "@/components/admin/TrafficChart";
 import { getDailyViewTotals } from "@/lib/postViews";
 
-const TRAFFIC_WINDOW_DAYS = 30;
+const TRAFFIC_WINDOW_OPTIONS = [7, 30, 90] as const;
+const DEFAULT_TRAFFIC_WINDOW_DAYS = 30;
 
-export default async function AnalyticsPage() {
+function parseWindowDays(rangeParam: string | string[] | undefined): number {
+  const raw = Array.isArray(rangeParam) ? rangeParam[0] : rangeParam;
+  const parsed = Number(raw);
+  return (TRAFFIC_WINDOW_OPTIONS as readonly number[]).includes(parsed)
+    ? parsed
+    : DEFAULT_TRAFFIC_WINDOW_DAYS;
+}
+
+export default async function AnalyticsPage({ searchParams }: PageProps<"/admin/analytics">) {
+  const { range: rangeParam } = await searchParams;
+  const TRAFFIC_WINDOW_DAYS = parseWindowDays(rangeParam);
+
   const windowStart = new Date();
   windowStart.setUTCDate(windowStart.getUTCDate() - (TRAFFIC_WINDOW_DAYS - 1));
   windowStart.setUTCHours(0, 0, 0, 0);
@@ -67,6 +79,23 @@ export default async function AnalyticsPage() {
       <PageHeader
         title="Analytics"
         description="Tráfego e posts mais lidos do blog."
+        actions={
+          <div className="flex items-center gap-1 rounded-lg border border-surface-border p-1 text-sm">
+            {TRAFFIC_WINDOW_OPTIONS.map((days) => (
+              <Link
+                key={days}
+                href={days === DEFAULT_TRAFFIC_WINDOW_DAYS ? "/admin/analytics" : `/admin/analytics?range=${days}`}
+                className={`rounded-md px-3 py-1 font-medium ${
+                  days === TRAFFIC_WINDOW_DAYS
+                    ? "bg-brand text-white"
+                    : "text-foreground/60 hover:text-foreground"
+                }`}
+              >
+                {days}d
+              </Link>
+            ))}
+          </div>
+        }
       />
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

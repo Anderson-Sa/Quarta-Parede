@@ -17,7 +17,7 @@ export function isNewsletterConfigured() {
   return Boolean(process.env.RESEND_API_KEY && process.env.NEWSLETTER_FROM_EMAIL);
 }
 
-function escapeHtml(value: string) {
+export function escapeHtml(value: string) {
   const map: Record<string, string> = {
     "&": "&amp;",
     "<": "&lt;",

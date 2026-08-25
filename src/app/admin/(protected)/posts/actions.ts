@@ -8,8 +8,26 @@ import { postSchema, firstIssueMessage } from "@/lib/validation";
 import { saveUploadedImage } from "@/lib/upload";
 import { blocksToPlainMarkdown, parseContent } from "@/lib/contentBlocks";
 import { isAdminSessionValid } from "@/lib/adminSession";
+import { checkRateLimit, formatRetryAfter, getClientIp } from "@/lib/rateLimit";
 
 export type PostFormState = { error?: string } | undefined;
+
+// These routes sit behind the admin auth guard, so rate limiting here is
+// defense-in-depth (a leaked/stolen session cookie, a runaway script, a
+// compromised admin machine) rather than the primary defense — hence limits
+// generous enough not to get in the way of normal editing sessions.
+const WRITE_MAX_ATTEMPTS = 30;
+const WRITE_WINDOW_MS = 5 * 60 * 1000;
+const UPLOAD_MAX_ATTEMPTS = 20;
+const UPLOAD_WINDOW_MS = 5 * 60 * 1000;
+
+/** Returns an error message if the caller's IP is over the given rate limit, or null if allowed. */
+async function checkAdminRateLimit(action: string, maxAttempts: number, windowMs: number) {
+  const ip = await getClientIp();
+  const result = await checkRateLimit(`admin-${action}:${ip}`, maxAttempts, windowMs);
+  if (result.allowed) return null;
+  return `Muitas requisições. Tente novamente em ${formatRetryAfter(result.retryAfterSeconds)}.`;
+}
 
 /** Keeps the standalone PostSearch FTS5 table (see prisma/migrations) in sync.
  * `content` may be a JSON block envelope (see src/lib/contentBlocks.ts), so
@@ -64,6 +82,9 @@ export async function createPost(
   _prevState: PostFormState,
   formData: FormData,
 ): Promise<PostFormState> {
+  const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
+
   const parsed = postSchema.safeParse(readPostInput(formData));
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
   const { title, excerpt, content, coverImageAlt, categoryId, tagIds, published, publishedAt } =
@@ -123,6 +144,9 @@ export async function updatePost(
   _prevState: PostFormState,
   formData: FormData,
 ): Promise<PostFormState> {
+  const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
+
   const parsed = postSchema.safeParse(readPostInput(formData));
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
   const { title, excerpt, content, coverImageAlt, categoryId, tagIds, published, publishedAt } =
@@ -197,22 +221,31 @@ export async function updatePost(
   return undefined;
 }
 
-export async function deletePost(id: string) {
+export async function deletePost(id: string): Promise<{ error?: string } | undefined> {
+  const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
+
   const post = await prisma.post.delete({ where: { id } });
   await removePostSearch(id);
   revalidatePath("/admin/posts");
   revalidatePath("/");
   revalidatePath(`/post/${post.slug}`);
+  return undefined;
 }
 
-export async function deletePosts(ids: string[]) {
-  if (ids.length === 0) return;
+export async function deletePosts(ids: string[]): Promise<{ error?: string } | undefined> {
+  if (ids.length === 0) return undefined;
+
+  const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
+
   const posts = await prisma.post.findMany({ where: { id: { in: ids } }, select: { id: true, slug: true } });
   await prisma.post.deleteMany({ where: { id: { in: ids } } });
   await Promise.all(posts.map((post) => removePostSearch(post.id)));
   revalidatePath("/admin/posts");
   revalidatePath("/");
   for (const post of posts) revalidatePath(`/post/${post.slug}`);
+  return undefined;
 }
 
 export async function restorePostRevision(postId: string, revisionId: string) {
@@ -257,6 +290,9 @@ export async function restorePostRevision(postId: string, revisionId: string) {
  * they're added, so this needs its own action. */
 export async function uploadPostImage(formData: FormData): Promise<{ url?: string; error?: string }> {
   if (!(await isAdminSessionValid())) return { error: "Não autenticado." };
+
+  const rateLimitError = await checkAdminRateLimit("upload", UPLOAD_MAX_ATTEMPTS, UPLOAD_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Nenhum arquivo enviado." };

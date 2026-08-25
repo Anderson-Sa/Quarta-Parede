@@ -16,7 +16,11 @@ export function DeletePostButton({ id }: { id: string }) {
       onClick={() => {
         if (!confirm("Excluir este post?")) return;
         startTransition(async () => {
-          await deletePost(id);
+          const result = await deletePost(id);
+          if (result?.error) {
+            alert(result.error);
+            return;
+          }
           router.push("/admin/posts");
         });
       }}
