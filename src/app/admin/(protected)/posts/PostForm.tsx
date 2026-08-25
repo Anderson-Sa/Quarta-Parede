@@ -255,15 +255,22 @@ export function PostForm({
           <div className="mt-4">
             <label htmlFor="coverImageAlt" className={labelClass}>
               Texto alternativo (acessibilidade/SEO)
+              {previewUrl && <span className="text-red-400"> *</span>}
             </label>
             <input
               id="coverImageAlt"
               name="coverImageAlt"
               maxLength={300}
+              required={!!previewUrl}
               defaultValue={post?.coverImageAlt ?? ""}
               placeholder="Descreva a imagem"
               className={inputClass}
             />
+            {previewUrl && (
+              <p className="mt-1.5 text-xs text-foreground/40">
+                Obrigatório quando há uma imagem de capa.
+              </p>
+            )}
           </div>
         </AdminCard>
       </div>

@@ -36,18 +36,28 @@ describe("postSchema", () => {
     expect(result.coverImageUrl).toBeUndefined();
   });
 
-  it("accepts an http(s) coverImageUrl", () => {
+  it("accepts an http(s) coverImageUrl with alt text", () => {
     const result = postSchema.safeParse({
       ...validPost,
       coverImageUrl: "https://example.com/image.png",
+      coverImageAlt: "Descrição da imagem",
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts a data:image/... coverImageUrl", () => {
+  it("rejects a coverImageUrl without alt text", () => {
+    const result = postSchema.safeParse({
+      ...validPost,
+      coverImageUrl: "https://example.com/image.png",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a data:image/... coverImageUrl with alt text", () => {
     const result = postSchema.safeParse({
       ...validPost,
       coverImageUrl: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=",
+      coverImageAlt: "Descrição da imagem",
     });
     expect(result.success).toBe(true);
   });
@@ -91,6 +101,7 @@ describe("siteSettingsSchema", () => {
     slogan: "Um blog geek",
     logoUrl: "",
     footerText: "Rodapé do site",
+    aboutText: "Somos um blog sobre cultura geek.",
   };
 
   it("accepts valid settings", () => {

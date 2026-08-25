@@ -39,15 +39,18 @@ function readPostInput(formData: FormData) {
   };
 }
 
+function pickedCoverImageFile(formData: FormData): File | undefined {
+  const file = formData.get("coverImageFile");
+  return file instanceof File && file.size > 0 ? file : undefined;
+}
+
 /**
  * If a file was picked in the "coverImageFile" input, save it and return its
  * URL; otherwise fall back to the coverImageUrl text field (or null).
  */
 async function resolveCoverImageUrl(formData: FormData, coverImageUrl: string | undefined) {
-  const file = formData.get("coverImageFile");
-  if (file instanceof File && file.size > 0) {
-    return saveUploadedImage(file);
-  }
+  const file = pickedCoverImageFile(formData);
+  if (file) return saveUploadedImage(file);
   return coverImageUrl ?? null;
 }
 
@@ -65,6 +68,13 @@ export async function createPost(
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
   const { title, excerpt, content, coverImageAlt, categoryId, tagIds, published, publishedAt } =
     parsed.data;
+
+  // postSchema's coverImageUrl/coverImageAlt refine only sees the URL text
+  // field — a file picked via "coverImageFile" is resolved separately below,
+  // so it needs its own alt-text check here.
+  if (pickedCoverImageFile(formData) && !coverImageAlt) {
+    return { error: "Informe um texto alternativo para a imagem de capa." };
+  }
 
   const category = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!category) return { error: "Categoria inválida." };
@@ -117,6 +127,10 @@ export async function updatePost(
   if (!parsed.success) return { error: firstIssueMessage(parsed.error) };
   const { title, excerpt, content, coverImageAlt, categoryId, tagIds, published, publishedAt } =
     parsed.data;
+
+  if (pickedCoverImageFile(formData) && !coverImageAlt) {
+    return { error: "Informe um texto alternativo para a imagem de capa." };
+  }
 
   const current = await prisma.post.findUnique({ where: { id } });
   if (!current) return { error: "Post não encontrado." };

@@ -49,41 +49,48 @@ const optionalDateTimeLocal = z
   .transform((value) => (value ? value : undefined))
   .refine((value) => value === undefined || !Number.isNaN(Date.parse(value)), "Data inválida.");
 
-export const postSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "Informe um título.")
-    .max(200, "Título muito longo (máx. 200 caracteres)."),
-  excerpt: z
-    .string()
-    .trim()
-    .min(1, "Informe um resumo.")
-    .max(500, "Resumo muito longo (máx. 500 caracteres)."),
-  content: z
-    .string()
-    .trim()
-    .min(1, "Informe o conteúdo.")
-    // Content is JSON-encoded blocks (see src/lib/contentBlocks.ts) for posts
-    // built with the block editor, so this needs more headroom than a plain
-    // Markdown string would.
-    .max(60000, "Conteúdo muito longo (máx. 60000 caracteres)."),
-  coverImageUrl: optionalUrl,
-  coverImageAlt: z
-    .string()
-    .trim()
-    .max(300, "Texto alternativo muito longo (máx. 300 caracteres).")
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : undefined)),
-  categoryId: z.string().trim().min(1, "Selecione uma categoria."),
-  tagIds: z
-    .array(z.string().trim().min(1))
-    .max(20, "Selecione no máximo 20 tags.")
-    .default([]),
-  published: z.boolean(),
-  publishedAt: optionalDateTimeLocal,
-});
+export const postSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Informe um título.")
+      .max(200, "Título muito longo (máx. 200 caracteres)."),
+    excerpt: z
+      .string()
+      .trim()
+      .min(1, "Informe um resumo.")
+      .max(500, "Resumo muito longo (máx. 500 caracteres)."),
+    content: z
+      .string()
+      .trim()
+      .min(1, "Informe o conteúdo.")
+      // Content is JSON-encoded blocks (see src/lib/contentBlocks.ts) for posts
+      // built with the block editor, so this needs more headroom than a plain
+      // Markdown string would.
+      .max(60000, "Conteúdo muito longo (máx. 60000 caracteres)."),
+    coverImageUrl: optionalUrl,
+    coverImageAlt: z
+      .string()
+      .trim()
+      .max(300, "Texto alternativo muito longo (máx. 300 caracteres).")
+      .optional()
+      .or(z.literal(""))
+      .transform((value) => (value ? value : undefined)),
+    categoryId: z.string().trim().min(1, "Selecione uma categoria."),
+    tagIds: z
+      .array(z.string().trim().min(1))
+      .max(20, "Selecione no máximo 20 tags.")
+      .default([]),
+    published: z.boolean(),
+    publishedAt: optionalDateTimeLocal,
+  })
+  // Alt text is only meaningful (and only required) when there's actually an
+  // image to describe — a post with no cover image has nothing to alt-tag.
+  .refine((data) => !data.coverImageUrl || !!data.coverImageAlt, {
+    message: "Informe um texto alternativo para a imagem de capa.",
+    path: ["coverImageAlt"],
+  });
 
 export const categorySchema = z.object({
   name: z
