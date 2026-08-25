@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Eye } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { PostForm } from "../PostForm";
@@ -26,7 +28,22 @@ export default async function EditarPostPage({
 
   return (
     <div>
-      <PageHeader title="Editar post" actions={<DeletePostButton id={post.id} />} />
+      <PageHeader
+        title="Editar post"
+        actions={
+          <>
+            <Link
+              href={`/post/${post.slug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:border-brand hover:text-brand"
+            >
+              <Eye className="h-4 w-4" />
+              {post.published ? "Ver post" : "Ver preview"}
+            </Link>
+            <DeletePostButton id={post.id} />
+          </>
+        }
+      />
       <div className="mt-6 space-y-6">
         <PostForm
           categories={categories}

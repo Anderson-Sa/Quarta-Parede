@@ -29,7 +29,10 @@ export async function Footer() {
           <NewsletterForm />
         </div>
 
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        <nav
+          aria-label="Links institucionais"
+          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+        >
           <Link href="/" className="hover:text-brand">
             Início
           </Link>

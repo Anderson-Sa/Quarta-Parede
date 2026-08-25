@@ -69,11 +69,27 @@ model Post {
   tags           Tag[]
   comments       Comment[]
   revisions      PostRevision[]
+  viewsDaily     PostViewDaily[]
   views          Int       @default(0)
   published      Boolean   @default(false)
   publishedAt    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// Day-bucketed view counter, separate from Post.views (a simple running
+// total). Lets the admin analytics dashboard (src/app/admin/(protected)/analytics)
+// chart real traffic over time without storing one row per page view.
+model PostViewDaily {
+  id     String   @id @default(cuid())
+  postId String
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  // Truncated to the start of the UTC day (see src/lib/postViews.ts).
+  date   DateTime
+  count  Int      @default(0)
+
+  @@unique([postId, date])
+  @@index([date])
 }
 
 model Comment {

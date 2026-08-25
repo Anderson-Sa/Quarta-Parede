@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
 import { categoryColor } from "@/lib/categoryColor";
 import { publicPostWhere } from "@/lib/publicPosts";
+import { isAdminSessionValid } from "@/lib/adminSession";
+import { recordPostView } from "@/lib/postViews";
 import { readingTime } from "@/lib/readingTime";
 import { extractToc } from "@/lib/toc";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -25,8 +27,11 @@ export async function generateMetadata({
   params,
 }: PageProps<"/post/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const post = await prisma.post.findUnique({ where: { slug } });
-  if (!post) return {};
+  const post = await prisma.post.findFirst({ where: { slug, ...publicPostWhere() } });
+  // Drafts/scheduled posts have no public metadata — even for an admin
+  // previewing them, since crawlers ignore cookies and would otherwise pick
+  // up a real title/description for a page that 404s for everyone else.
+  if (!post) return { robots: { index: false, follow: false } };
 
   // Omit the `images` key entirely (rather than setting it to undefined)
   // when there's no cover image, so Next.js falls back to the file-convention
@@ -58,18 +63,36 @@ export async function generateMetadata({
 export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
   const { slug } = await params;
 
-  const post = await prisma.post.findFirst({
-    where: { slug, ...publicPostWhere() },
-    include: {
-      category: true,
-      tags: true,
-      comments: { where: { approved: true }, orderBy: { createdAt: "desc" } },
-    },
-  });
+  const include = {
+    category: true,
+    tags: true,
+    comments: { where: { approved: true }, orderBy: { createdAt: "desc" } },
+  } as const;
+
+  let post = await prisma.post.findFirst({ where: { slug, ...publicPostWhere() }, include });
+  let isPreview = false;
+
+  if (!post) {
+    // Not publicly visible (draft, or scheduled for the future) — fall back
+    // to an admin-only preview so editors can see a post before it goes
+    // live, reusing the same signed cookie the /admin panel already checks.
+    const isAdmin = await isAdminSessionValid();
+    if (isAdmin) {
+      post = await prisma.post.findUnique({ where: { slug }, include });
+      isPreview = post !== null;
+    }
+  }
+
   if (!post) notFound();
 
-  // Best-effort view counter — not critical if it occasionally races.
-  await prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } });
+  // Best-effort view counter — not critical if it occasionally races. Skipped
+  // in preview mode so an admin checking a draft doesn't inflate real stats.
+  if (!isPreview) {
+    await Promise.all([
+      prisma.post.update({ where: { id: post.id }, data: { views: { increment: 1 } } }),
+      recordPostView(post.id),
+    ]);
+  }
 
   const [color, settings, relatedPosts] = await Promise.all([
     categoryColor(post.category.slug),
@@ -119,6 +142,16 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {isPreview && (
+        <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <strong className="font-semibold">Pré-visualização:</strong>{" "}
+          {post.published
+            ? "este post está agendado e ainda não foi publicado publicamente."
+            : "este post ainda não foi publicado."}{" "}
+          Só você, como admin, consegue ver esta página.
+        </div>
+      )}
 
       <h1 className="text-3xl font-extrabold">{post.title}</h1>
 

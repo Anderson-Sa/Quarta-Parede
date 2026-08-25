@@ -12,6 +12,7 @@ import {
   Settings,
   Palette,
   Megaphone,
+  BarChart3,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/admin/tags", label: "Tags", icon: Tag },
   { href: "/admin/comentarios", label: "Comentários", icon: MessageSquare },
   { href: "/admin/assinantes", label: "Assinantes", icon: Mail },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/aparencia", label: "Aparência", icon: Palette },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },

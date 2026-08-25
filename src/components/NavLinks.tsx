@@ -15,6 +15,7 @@ export function NavLinks({
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
       <Link
         href="/"
+        aria-current={pathname === "/" ? "page" : undefined}
         className={`border-b-2 pb-1 text-sm font-bold uppercase tracking-wide transition-colors ${
           pathname === "/"
             ? "border-brand text-foreground"
@@ -31,6 +32,7 @@ export function NavLinks({
           <Link
             key={category.slug}
             href={href}
+            aria-current={active ? "page" : undefined}
             className={`border-b-2 pb-1 text-sm font-bold uppercase tracking-wide transition-colors ${
               active
                 ? `${color.border} text-foreground`

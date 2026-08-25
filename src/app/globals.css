@@ -42,3 +42,33 @@ html[data-admin-theme="light"] .admin-shell {
   --surface-muted: #ffffff;
   --surface-border: #e4e4e7;
 }
+
+/* Visible keyboard-focus ring, site-wide (public + admin — neither had one
+ * before). Only shows for keyboard/programmatic focus (:focus-visible), so
+ * it doesn't add an outline on mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Skip-to-content link (see SiteLayout in src/app/(site)/layout.tsx). Kept
+ * off-screen until it receives keyboard focus, then pinned to the top-left
+ * corner above everything else. */
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: 0.5rem;
+  z-index: 100;
+  background: var(--brand);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 0.375rem 0.375rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}

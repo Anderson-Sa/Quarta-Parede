@@ -30,7 +30,7 @@ export async function Header() {
         </Link>
 
         <div className="hidden items-center gap-4 sm:flex">
-          <nav className="overflow-x-auto">
+          <nav aria-label="Categorias" className="overflow-x-auto">
             <NavLinks categories={categories} />
           </nav>
           <Suspense fallback={null}>
