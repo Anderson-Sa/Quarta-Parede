@@ -109,6 +109,20 @@ model Subscriber {
   createdAt DateTime @default(now())
 }
 
+// A named admin account (src/lib/adminUsers.ts). Replaces the single shared
+// ADMIN_PASSWORD login: each person editing the blog gets their own
+// login/password, which is safer and lets actions be attributed to a person.
+// The very first row is bootstrapped from ADMIN_EMAIL/ADMIN_PASSWORD in .env
+// (see bootstrapFirstAdminUser); every account created afterwards goes
+// through /admin/usuarios.
+model AdminUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
 model RateLimitBucket {
   key       String   @id
   count     Int      @default(1)

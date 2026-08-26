@@ -13,6 +13,7 @@ import {
   Palette,
   Megaphone,
   BarChart3,
+  Users,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/aparencia", label: "Aparência", icon: Palette },
+  { href: "/admin/usuarios", label: "Usuários", icon: Users },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 

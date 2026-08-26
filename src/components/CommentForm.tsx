@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Script from "next/script";
 import type { CommentFormState } from "@/app/(site)/post/[slug]/actions";
 
 export function CommentForm({
@@ -9,6 +10,11 @@ export function CommentForm({
   action: (state: CommentFormState, formData: FormData) => Promise<CommentFormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  // Opt-in CAPTCHA (see src/lib/turnstile.ts): only rendered when the site
+  // operator has set NEXT_PUBLIC_TURNSTILE_SITE_KEY. The widget injects its
+  // own hidden "cf-turnstile-response" input, which travels to the server
+  // action along with the rest of the form's FormData.
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   if (state?.success) {
     return (
@@ -66,6 +72,18 @@ export function CommentForm({
           className="w-full rounded-md border border-surface-border bg-transparent px-3 py-2 text-sm outline-none focus:border-brand"
         />
       </div>
+
+      {turnstileSiteKey && (
+        <>
+          <Script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+            strategy="afterInteractive"
+            async
+            defer
+          />
+          <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
+        </>
+      )}
 
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
 

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { commentSchema, firstIssueMessage } from "@/lib/validation";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isCommentNotificationConfigured, notifyNewComment } from "@/lib/commentNotifications";
+import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 export type CommentFormState = { error?: string; success?: boolean } | undefined;
 
@@ -24,6 +25,12 @@ export async function submitComment(
   const rateLimit = await checkRateLimit(`comment:${ip}`, 5, 10 * 60 * 1000);
   if (!rateLimit.allowed) {
     return { error: "Muitos comentários em pouco tempo. Tente novamente mais tarde." };
+  }
+
+  if (isTurnstileConfigured()) {
+    const token = String(formData.get("cf-turnstile-response") ?? "");
+    const verified = await verifyTurnstileToken(token, ip);
+    if (!verified) return { error: "Verificação de segurança falhou. Tente novamente." };
   }
 
   const parsed = commentSchema.safeParse({

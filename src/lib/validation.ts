@@ -132,6 +132,33 @@ export const commentSchema = z.object({
     .max(2000, "Comentário muito longo (máx. 2000 caracteres)."),
 });
 
+export const adminUserSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Informe um nome.")
+    .max(100, "Nome muito longo (máx. 100 caracteres)."),
+  email: z.email("E-mail inválido.").trim().max(200),
+  password: z
+    .string()
+    .min(8, "A senha deve ter no mínimo 8 caracteres.")
+    .max(200, "Senha muito longa (máx. 200 caracteres)."),
+});
+
+// Same as adminUserSchema, but the password is optional — leaving it blank
+// on the edit form keeps the current password.
+export const adminUserUpdateSchema = z.object({
+  name: adminUserSchema.shape.name,
+  email: adminUserSchema.shape.email,
+  password: z
+    .string()
+    .max(200, "Senha muito longa (máx. 200 caracteres).")
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : undefined))
+    .refine((value) => value === undefined || value.length >= 8, "A senha deve ter no mínimo 8 caracteres."),
+});
+
 export const subscriberSchema = z.object({
   email: z.email("E-mail inválido.").trim().max(200),
 });

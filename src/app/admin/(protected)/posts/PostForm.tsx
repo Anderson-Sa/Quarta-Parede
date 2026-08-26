@@ -131,6 +131,7 @@ export function PostForm({
           </h2>
           <label className="mt-4 flex items-center gap-2 text-sm text-foreground/80">
             <input
+              id="published"
               type="checkbox"
               name="published"
               defaultChecked={post?.published}

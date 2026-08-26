@@ -18,6 +18,20 @@ export default function AdminLoginPage() {
 
         <form action={formAction} className="mt-8 space-y-4 rounded-xl border border-surface-border bg-surface-muted p-6">
           <div>
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground/70">
+              E-mail
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              autoFocus
+              className="w-full rounded-md border border-surface-border bg-background px-3 py-2 text-foreground outline-none transition-colors focus:border-brand"
+            />
+          </div>
+
+          <div>
             <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground/70">
               Senha
             </label>
@@ -26,7 +40,6 @@ export default function AdminLoginPage() {
               name="password"
               type="password"
               required
-              autoFocus
               className="w-full rounded-md border border-surface-border bg-background px-3 py-2 text-foreground outline-none transition-colors focus:border-brand"
             />
           </div>

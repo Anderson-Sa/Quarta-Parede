@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { checkAdminPassword, createAdminSession } from "@/lib/adminSession";
+import { bootstrapFirstAdminUser, verifyAdminCredentials } from "@/lib/adminUsers";
+import { createAdminSession } from "@/lib/adminSession";
 import { checkRateLimit, formatRetryAfter, getClientIp } from "@/lib/rateLimit";
 
 export type LoginState = { error?: string } | undefined;
@@ -18,12 +19,21 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     };
   }
 
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-
-  if (!password || !checkAdminPassword(password)) {
-    return { error: "Senha incorreta." };
+  if (!email || !password) {
+    return { error: "Informe e-mail e senha." };
   }
 
-  await createAdminSession();
+  // No-ops once at least one admin user exists — cheap enough to call on
+  // every attempt and avoids needing a separate setup step for fresh installs.
+  await bootstrapFirstAdminUser();
+
+  const user = await verifyAdminCredentials(email, password);
+  if (!user) {
+    return { error: "E-mail ou senha incorretos." };
+  }
+
+  await createAdminSession(user.id);
   redirect("/admin");
 }
