@@ -14,7 +14,7 @@ export default async function EditarPostPage({
   const { id } = await params;
 
   const [post, categories, tags, revisions] = await Promise.all([
-    prisma.post.findUnique({ where: { id }, include: { tags: true } }),
+    prisma.post.findUnique({ where: { id }, include: { tags: true, author: { select: { name: true } } } }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     prisma.tag.findMany({ orderBy: { name: "asc" } }),
     prisma.postRevision.findMany({

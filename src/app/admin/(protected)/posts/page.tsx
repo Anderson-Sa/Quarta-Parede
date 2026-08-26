@@ -45,7 +45,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
   const posts = await prisma.post.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: { category: true },
+    include: { category: true, author: { select: { name: true } } },
     skip: (page - 1) * PAGE_SIZE,
     take: PAGE_SIZE,
   });

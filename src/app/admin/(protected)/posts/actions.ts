@@ -7,7 +7,7 @@ import { slugify, uniqueSlug } from "@/lib/slug";
 import { postSchema, firstIssueMessage } from "@/lib/validation";
 import { saveUploadedImage } from "@/lib/upload";
 import { blocksToPlainMarkdown, parseContent } from "@/lib/contentBlocks";
-import { isAdminSessionValid } from "@/lib/adminSession";
+import { getCurrentAdminUserId, isAdminSessionValid } from "@/lib/adminSession";
 import { checkRateLimit, formatRetryAfter, getClientIp } from "@/lib/rateLimit";
 
 export type PostFormState = { error?: string } | undefined;
@@ -116,6 +116,7 @@ export async function createPost(
   }
 
   const resolvedTagIds = await resolveTagIds(tagIds);
+  const authorId = await getCurrentAdminUserId();
 
   const post = await prisma.post.create({
     data: {
@@ -129,6 +130,7 @@ export async function createPost(
       tags: { connect: resolvedTagIds.map((id) => ({ id })) },
       published,
       publishedAt: published ? new Date(publishedAt ?? Date.now()) : null,
+      authorId,
     },
   });
 

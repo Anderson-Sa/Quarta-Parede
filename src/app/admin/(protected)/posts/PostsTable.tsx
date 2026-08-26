@@ -11,6 +11,7 @@ type PostRow = {
   id: string;
   title: string;
   category: { name: string };
+  author: { name: string } | null;
   published: boolean;
   publishedAt: Date | null;
   createdAt: Date;
@@ -81,6 +82,7 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
               </th>
               <th className="px-4 py-3.5 font-semibold">Título</th>
               <th className="px-4 py-3.5 font-semibold">Categoria</th>
+              <th className="px-4 py-3.5 font-semibold">Autor</th>
               <th className="px-4 py-3.5 font-semibold">Status</th>
               <th className="px-4 py-3.5 font-semibold">Criado em</th>
             </tr>
@@ -106,6 +108,7 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
                   </Link>
                 </td>
                 <td className="px-4 py-3.5 text-foreground/60">{post.category.name}</td>
+                <td className="px-4 py-3.5 text-foreground/60">{post.author?.name ?? "—"}</td>
                 <td className="px-4 py-3.5">
                   {post.published && post.publishedAt && post.publishedAt > new Date() ? (
                     <Badge tone="info">Agendado</Badge>

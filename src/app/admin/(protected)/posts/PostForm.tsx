@@ -21,6 +21,7 @@ type Post = {
   coverImageAlt: string | null;
   categoryId: string;
   tags: { id: string }[];
+  author: { name: string } | null;
   published: boolean;
   publishedAt: Date | null;
 };
@@ -129,6 +130,11 @@ export function PostForm({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground/50">
             Publicação
           </h2>
+          {post && (
+            <p className="mt-2 text-xs text-foreground/40">
+              Criado por {post.author?.name ?? "desconhecido"}
+            </p>
+          )}
           <label className="mt-4 flex items-center gap-2 text-sm text-foreground/80">
             <input
               id="published"
