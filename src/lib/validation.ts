@@ -132,6 +132,12 @@ export const commentSchema = z.object({
     .max(2000, "Comentário muito longo (máx. 2000 caracteres)."),
 });
 
+// Admins can manage other admin accounts and delete any post; editors can
+// only delete posts they authored themselves (see deletePost/deletePosts in
+// src/app/admin/(protected)/posts/actions.ts).
+export const ADMIN_ROLES = ["admin", "editor"] as const;
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+
 export const adminUserSchema = z.object({
   name: z
     .string()
@@ -143,6 +149,7 @@ export const adminUserSchema = z.object({
     .string()
     .min(8, "A senha deve ter no mínimo 8 caracteres.")
     .max(200, "Senha muito longa (máx. 200 caracteres)."),
+  role: z.enum(ADMIN_ROLES),
 });
 
 // Same as adminUserSchema, but the password is optional — leaving it blank
@@ -150,6 +157,7 @@ export const adminUserSchema = z.object({
 export const adminUserUpdateSchema = z.object({
   name: adminUserSchema.shape.name,
   email: adminUserSchema.shape.email,
+  role: adminUserSchema.shape.role,
   password: z
     .string()
     .max(200, "Senha muito longa (máx. 200 caracteres).")

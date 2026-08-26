@@ -31,12 +31,19 @@ const NAV_ITEMS = [
 ] as const;
 
 /** Top nav row with active-route highlighting and an optional pending-comments badge. */
-export function AdminNav({ pendingComments = 0 }: { pendingComments?: number }) {
+export function AdminNav({
+  pendingComments = 0,
+  role,
+}: {
+  pendingComments?: number;
+  role: string;
+}) {
   const pathname = usePathname();
+  const visibleItems = NAV_ITEMS.filter((item) => item.href !== "/admin/usuarios" || role === "admin");
 
   return (
     <nav className="flex items-center gap-1 overflow-x-auto px-6 py-2">
-      {NAV_ITEMS.map((item) => {
+      {visibleItems.map((item) => {
         const active =
           item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
         const Icon = item.icon;

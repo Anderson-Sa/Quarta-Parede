@@ -66,6 +66,7 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
   const include = {
     category: true,
     tags: true,
+    author: { select: { id: true, name: true } },
     comments: { where: { approved: true }, orderBy: { createdAt: "desc" } },
   } as const;
 
@@ -158,7 +159,13 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-foreground/60">
         <span className="flex items-center gap-1.5">
           <User className="h-4 w-4" />
-          {settings.siteName}
+          {post.author ? (
+            <Link href={`/autor/${post.author.id}`} className="hover:text-brand">
+              {post.author.name}
+            </Link>
+          ) : (
+            settings.siteName
+          )}
         </span>
         <span className="flex items-center gap-1.5">
           <Calendar className="h-4 w-4" />

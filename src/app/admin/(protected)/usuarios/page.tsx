@@ -1,18 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getCurrentAdminUserId } from "@/lib/adminSession";
+import { getCurrentAdminUser } from "@/lib/adminSession";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { AdminCard } from "@/components/admin/AdminCard";
 import { EmptyState } from "@/components/admin/EmptyState";
+import { Badge } from "@/components/admin/Badge";
 import { UserForm } from "./UserForm";
 import { DeleteUserButton } from "./DeleteUserButton";
 
 export default async function UsuariosPage() {
-  const [users, currentUserId] = await Promise.all([
-    prisma.adminUser.findMany({ orderBy: { createdAt: "asc" } }),
-    getCurrentAdminUserId(),
-  ]);
+  const currentUser = await getCurrentAdminUser();
+  if (currentUser?.role !== "admin") redirect("/admin");
+
+  const users = await prisma.adminUser.findMany({ orderBy: { createdAt: "asc" } });
+  const currentUserId = currentUser.id;
 
   return (
     <div>
@@ -31,6 +34,7 @@ export default async function UsuariosPage() {
               <tr>
                 <th className="px-4 py-3.5 font-semibold">Nome</th>
                 <th className="px-4 py-3.5 font-semibold">E-mail</th>
+                <th className="px-4 py-3.5 font-semibold">Papel</th>
                 <th className="px-4 py-3.5" />
               </tr>
             </thead>
@@ -48,6 +52,13 @@ export default async function UsuariosPage() {
                     )}
                   </td>
                   <td className="px-4 py-3.5 text-foreground/60">{user.email}</td>
+                  <td className="px-4 py-3.5">
+                    {user.role === "admin" ? (
+                      <Badge tone="info">Administrador</Badge>
+                    ) : (
+                      <Badge tone="neutral">Editor</Badge>
+                    )}
+                  </td>
                   <td className="px-4 py-3.5 text-right">
                     <DeleteUserButton
                       id={user.id}

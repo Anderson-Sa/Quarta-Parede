@@ -24,6 +24,7 @@ type Post = {
   author: { name: string } | null;
   published: boolean;
   publishedAt: Date | null;
+  updatedAt: Date;
 };
 
 /** Formats a Date as the "YYYY-MM-DDTHH:mm" value a datetime-local input expects, in local time. */
@@ -78,6 +79,7 @@ export function PostForm({
       onChange={() => setDirty(true)}
       className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_320px]"
     >
+      {post && <input type="hidden" name="expectedUpdatedAt" value={post.updatedAt.toISOString()} />}
       <div className="space-y-5">
         <AdminCard>
           <div>

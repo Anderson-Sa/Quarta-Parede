@@ -107,6 +107,12 @@ model Comment {
   body        String
   approved    Boolean  @default(false)
   createdAt   DateTime @default(now())
+  // Who approved this comment (see approveComment in
+  // src/app/admin/(protected)/comentarios/actions.ts). Nullable: unapproved
+  // comments have no moderator yet, and the account can later be deleted.
+  moderatedById String?
+  moderatedBy   AdminUser? @relation(fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderatedAt   DateTime?
 }
 
 model Subscriber {
@@ -126,8 +132,14 @@ model AdminUser {
   name         String
   email        String   @unique
   passwordHash String
+  // "admin" or "editor" (see ADMIN_ROLES in src/lib/validation.ts). Admins can
+  // manage other admin accounts and delete any post; editors can only delete
+  // posts they authored themselves.
+  role         String   @default("editor")
   createdAt    DateTime @default(now())
-  posts        Post[]
+  posts             Post[]
+  revisions         PostRevision[]
+  moderatedComments Comment[]
 }
 
 model RateLimitBucket {
@@ -166,6 +178,12 @@ model PostRevision {
   excerpt   String
   content   String
   createdAt DateTime @default(now())
+  // Who made the edit that produced this snapshot (see updatePost and
+  // restorePostRevision in src/app/admin/(protected)/posts/actions.ts).
+  // Nullable: the account can later be deleted.
+  authorId  String?
+  author    AdminUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([postId])
+  @@index([authorId])
 }

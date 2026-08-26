@@ -81,10 +81,14 @@ export async function getCurrentAdminUserId() {
 
 // Also confirms the user still exists, so deleting an admin account revokes
 // their access immediately instead of leaving a stolen/leftover cookie valid
-// until the 7-day expiry.
-export async function isAdminSessionValid() {
+// until the 7-day expiry. Returns the role too, since most callers that need
+// to confirm the session also need it to decide what the user may do.
+export async function getCurrentAdminUser() {
   const userId = await getCurrentAdminUserId();
-  if (!userId) return false;
-  const user = await prisma.adminUser.findUnique({ where: { id: userId }, select: { id: true } });
-  return user !== null;
+  if (!userId) return null;
+  return prisma.adminUser.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+}
+
+export async function isAdminSessionValid() {
+  return (await getCurrentAdminUser()) !== null;
 }

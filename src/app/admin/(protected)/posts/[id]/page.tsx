@@ -20,7 +20,13 @@ export default async function EditarPostPage({
     prisma.postRevision.findMany({
       where: { postId: id },
       orderBy: { createdAt: "desc" },
-      select: { id: true, title: true, excerpt: true, createdAt: true },
+      select: {
+        id: true,
+        title: true,
+        excerpt: true,
+        createdAt: true,
+        author: { select: { name: true } },
+      },
     }),
   ]);
 

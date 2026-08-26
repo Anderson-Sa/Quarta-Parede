@@ -7,7 +7,7 @@ import { slugify, uniqueSlug } from "@/lib/slug";
 import { postSchema, firstIssueMessage } from "@/lib/validation";
 import { saveUploadedImage } from "@/lib/upload";
 import { blocksToPlainMarkdown, parseContent } from "@/lib/contentBlocks";
-import { getCurrentAdminUserId, isAdminSessionValid } from "@/lib/adminSession";
+import { getCurrentAdminUser, getCurrentAdminUserId, isAdminSessionValid } from "@/lib/adminSession";
 import { checkRateLimit, formatRetryAfter, getClientIp } from "@/lib/rateLimit";
 
 export type PostFormState = { error?: string } | undefined;
@@ -161,6 +161,16 @@ export async function updatePost(
   const current = await prisma.post.findUnique({ where: { id } });
   if (!current) return { error: "Post não encontrado." };
 
+  // Detect a lost-update conflict: if the post changed since this form was
+  // loaded (e.g. another admin saved in the meantime), bail out instead of
+  // silently overwriting their edit.
+  const expectedUpdatedAt = String(formData.get("expectedUpdatedAt") ?? "");
+  if (expectedUpdatedAt && new Date(expectedUpdatedAt).getTime() !== current.updatedAt.getTime()) {
+    return {
+      error: "Este post foi alterado por outra pessoa desde que você começou a editar. Recarregue a página.",
+    };
+  }
+
   const category = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!category) return { error: "Categoria inválida." };
 
@@ -185,6 +195,7 @@ export async function updatePost(
       title: current.title,
       excerpt: current.excerpt,
       content: current.content,
+      authorId: await getCurrentAdminUserId(),
     },
   });
   // Keep at most the 20 most recent revisions per post.
@@ -227,6 +238,13 @@ export async function deletePost(id: string): Promise<{ error?: string } | undef
   const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
   if (rateLimitError) return { error: rateLimitError };
 
+  const currentUser = await getCurrentAdminUser();
+  const target = await prisma.post.findUnique({ where: { id }, select: { authorId: true } });
+  if (!target) return { error: "Post não encontrado." };
+  if (currentUser?.role !== "admin" && target.authorId !== currentUser?.id) {
+    return { error: "Você só pode excluir posts que você criou." };
+  }
+
   const post = await prisma.post.delete({ where: { id } });
   await removePostSearch(id);
   revalidatePath("/admin/posts");
@@ -241,7 +259,15 @@ export async function deletePosts(ids: string[]): Promise<{ error?: string } | u
   const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
   if (rateLimitError) return { error: rateLimitError };
 
-  const posts = await prisma.post.findMany({ where: { id: { in: ids } }, select: { id: true, slug: true } });
+  const currentUser = await getCurrentAdminUser();
+  const posts = await prisma.post.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, slug: true, authorId: true },
+  });
+  if (currentUser?.role !== "admin" && posts.some((post) => post.authorId !== currentUser?.id)) {
+    return { error: "Você só pode excluir posts que você criou." };
+  }
+
   await prisma.post.deleteMany({ where: { id: { in: ids } } });
   await Promise.all(posts.map((post) => removePostSearch(post.id)));
   revalidatePath("/admin/posts");
@@ -264,6 +290,7 @@ export async function restorePostRevision(postId: string, revisionId: string) {
       title: current.title,
       excerpt: current.excerpt,
       content: current.content,
+      authorId: await getCurrentAdminUserId(),
     },
   });
 

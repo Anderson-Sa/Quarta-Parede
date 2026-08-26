@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, LogOut } from "lucide-react";
-import { isAdminSessionValid } from "@/lib/adminSession";
+import { getCurrentAdminUser } from "@/lib/adminSession";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { AdminNav } from "@/components/admin/AdminNav";
@@ -10,8 +10,8 @@ import { ThemeToggle } from "@/components/admin/ThemeToggle";
 import { logout } from "./actions";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const authenticated = await isAdminSessionValid();
-  if (!authenticated) redirect("/admin/login");
+  const currentUser = await getCurrentAdminUser();
+  if (!currentUser) redirect("/admin/login");
 
   const [pendingComments, settings] = await Promise.all([
     prisma.comment.count({ where: { approved: false } }),
@@ -58,7 +58,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
         <div className="border-t border-surface-border">
-          <AdminNav pendingComments={pendingComments} />
+          <AdminNav pendingComments={pendingComments} role={currentUser.role} />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>

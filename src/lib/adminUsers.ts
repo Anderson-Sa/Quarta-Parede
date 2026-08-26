@@ -27,6 +27,7 @@ export async function bootstrapFirstAdminUser() {
       name: "Admin",
       email: email.trim().toLowerCase(),
       passwordHash: hashPassword(password),
+      role: "admin",
     },
   });
 }

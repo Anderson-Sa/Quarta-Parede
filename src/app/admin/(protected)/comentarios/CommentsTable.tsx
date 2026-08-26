@@ -14,6 +14,7 @@ type CommentRow = {
   approved: boolean;
   createdAt: Date;
   post: { title: string };
+  moderatedBy: { name: string } | null;
 };
 
 export function CommentsTable({ comments }: { comments: CommentRow[] }) {
@@ -125,6 +126,9 @@ export function CommentsTable({ comments }: { comments: CommentRow[] }) {
                     <Badge tone="success">Aprovado</Badge>
                   ) : (
                     <Badge tone="warning">Pendente</Badge>
+                  )}
+                  {comment.approved && comment.moderatedBy && (
+                    <p className="mt-1 text-xs text-foreground/40">por {comment.moderatedBy.name}</p>
                   )}
                 </td>
                 <td className="px-4 py-3.5 text-foreground/60">{formatDate(comment.createdAt)}</td>

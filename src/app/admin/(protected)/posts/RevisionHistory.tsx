@@ -12,6 +12,7 @@ type Revision = {
   title: string;
   excerpt: string;
   createdAt: Date;
+  author: { name: string } | null;
 };
 
 export function RevisionHistory({ postId, revisions }: { postId: string; revisions: Revision[] }) {
@@ -47,7 +48,10 @@ export function RevisionHistory({ postId, revisions }: { postId: string; revisio
           >
             <div className="min-w-0">
               <p className="truncate font-medium text-foreground">{revision.title}</p>
-              <p className="mt-0.5 text-xs text-foreground/40">{formatDateTime(revision.createdAt)}</p>
+              <p className="mt-0.5 text-xs text-foreground/40">
+                {formatDateTime(revision.createdAt)}
+                {revision.author && ` · por ${revision.author.name}`}
+              </p>
             </div>
             <button
               type="button"

@@ -7,7 +7,7 @@ export function UserEditForm({
   user,
   action,
 }: {
-  user: { name: string; email: string };
+  user: { name: string; email: string; role: string };
   action: (prevState: AdminUserFormState, formData: FormData) => Promise<AdminUserFormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -53,6 +53,20 @@ export function UserEditForm({
           placeholder="Deixe em branco para manter a atual"
           className="w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-brand"
         />
+      </div>
+      <div>
+        <label htmlFor="role" className="mb-1.5 block text-sm font-medium text-foreground/70">
+          Papel
+        </label>
+        <select
+          id="role"
+          name="role"
+          defaultValue={user.role}
+          className="w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand"
+        >
+          <option value="editor">Editor</option>
+          <option value="admin">Administrador</option>
+        </select>
       </div>
 
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}

@@ -7,7 +7,10 @@ import { CommentsTable } from "./CommentsTable";
 export default async function ComentariosPage() {
   const comments = await prisma.comment.findMany({
     orderBy: [{ approved: "asc" }, { createdAt: "desc" }],
-    include: { post: { select: { title: true, slug: true } } },
+    include: {
+      post: { select: { title: true, slug: true } },
+      moderatedBy: { select: { name: true } },
+    },
   });
 
   return (

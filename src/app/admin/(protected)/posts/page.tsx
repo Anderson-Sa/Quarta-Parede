@@ -21,10 +21,12 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
   const q = (firstValue(params.q) ?? "").trim();
   const categoryId = firstValue(params.category) ?? "";
   const status = firstValue(params.status) ?? "";
+  const authorId = firstValue(params.author) ?? "";
 
   const where: Prisma.PostWhereInput = {};
   if (q) where.title = { contains: q };
   if (categoryId) where.categoryId = categoryId;
+  if (authorId) where.authorId = authorId;
   if (status === "publicado") {
     where.published = true;
     where.OR = [{ publishedAt: null }, { publishedAt: { lte: new Date() } }];
@@ -35,9 +37,10 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
     where.published = false;
   }
 
-  const [totalPosts, categories] = await Promise.all([
+  const [totalPosts, categories, authors] = await Promise.all([
     prisma.post.count({ where }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
+    prisma.adminUser.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   const totalPages = Math.max(1, Math.ceil(totalPosts / PAGE_SIZE));
   const page = Math.min(currentPage, totalPages);
@@ -50,7 +53,12 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
     take: PAGE_SIZE,
   });
 
-  const activeFilters = { q: q || undefined, category: categoryId || undefined, status: status || undefined };
+  const activeFilters = {
+    q: q || undefined,
+    category: categoryId || undefined,
+    status: status || undefined,
+    author: authorId || undefined,
+  };
   const inputClass =
     "w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-foreground/30 focus:border-brand";
 
@@ -103,13 +111,26 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
             <option value="rascunho">Rascunho</option>
           </select>
         </div>
+        <div className="min-w-[160px]">
+          <label htmlFor="author" className="mb-1.5 block text-xs font-medium text-foreground/60">
+            Autor
+          </label>
+          <select id="author" name="author" defaultValue={authorId} className={inputClass}>
+            <option value="">Todos</option>
+            {authors.map((author) => (
+              <option key={author.id} value={author.id}>
+                {author.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="submit"
           className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
         >
           Filtrar
         </button>
-        {(q || categoryId || status) && (
+        {(q || categoryId || status || authorId) && (
           <Link
             href="/admin/posts"
             className="rounded-md border border-surface-border px-4 py-2 text-sm font-medium text-foreground/60 transition-colors hover:text-foreground"
@@ -124,7 +145,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
           <div className="overflow-hidden rounded-xl border border-surface-border bg-surface-muted">
             <EmptyState
               icon={FileText}
-              message={q || categoryId || status ? "Nenhum post encontrado com esses filtros." : "Nenhum post cadastrado ainda."}
+              message={q || categoryId || status || authorId ? "Nenhum post encontrado com esses filtros." : "Nenhum post cadastrado ainda."}
             />
           </div>
         ) : (
