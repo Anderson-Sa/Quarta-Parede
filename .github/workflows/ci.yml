@@ -38,6 +38,10 @@ jobs:
           npx prisma migrate deploy
 
       - run: npm run lint
+
+      - name: Generate Next.js route types
+        run: npx next typegen
+
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
