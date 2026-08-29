@@ -32,8 +32,9 @@ export function NavLinks({
           <Link
             key={category.slug}
             href={href}
+            title={category.name}
             aria-current={active ? "page" : undefined}
-            className={`border-b-2 pb-1 text-sm font-bold uppercase tracking-wide transition-colors ${
+            className={`max-w-[10rem] truncate border-b-2 pb-1 text-sm font-bold uppercase tracking-wide transition-colors ${
               active
                 ? `${color.border} text-foreground`
                 : "border-transparent text-foreground/70 hover:text-foreground"

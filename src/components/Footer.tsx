@@ -22,7 +22,7 @@ export async function Footer() {
           />
         )}
 
-        <p className="max-w-md">{settings.footerText}</p>
+        <p className="max-w-md break-words">{settings.footerText}</p>
 
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm font-semibold text-foreground/80">Receba as novidades por e-mail</p>
