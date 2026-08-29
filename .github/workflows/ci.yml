@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Shared by every job: a throwaway SQLite DB created fresh from the Prisma
+# migrations, and dummy secrets that are only ever read on this CI runner
+# (never used against real data). ADMIN_EMAIL/ADMIN_PASSWORD only matter for
+# the e2e job (see src/lib/adminUsers.ts — they bootstrap the first admin
+# account on first login).
+env:
+  DATABASE_URL: "file:./dev.db"
+  ADMIN_SESSION_SECRET: "ci-only-secret-never-used-outside-github-actions"
+  NEXT_PUBLIC_SITE_URL: "http://localhost:3000"
+  ADMIN_EMAIL: "admin@quartaparede.local"
+  ADMIN_PASSWORD: "ci-only-password-0000"
+
+jobs:
+  test:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prisma generate + migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: Playwright e2e
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prisma generate + migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

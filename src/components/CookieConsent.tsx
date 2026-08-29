@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getStoredConsent, setStoredConsent, type ConsentValue } from "@/lib/cookieConsent";
+import { useSyncExternalStore } from "react";
+import {
+  COOKIE_CONSENT_EVENT,
+  getStoredConsent,
+  setStoredConsent,
+  type ConsentValue,
+} from "@/lib/cookieConsent";
 
 // Only shown when analytics is actually configured (see Analytics.tsx) —
 // with no script to opt into, a consent banner would just be noise.
@@ -9,19 +14,34 @@ const ANALYTICS_CONFIGURED = Boolean(
   process.env.NEXT_PUBLIC_ANALYTICS_SCRIPT_URL && process.env.NEXT_PUBLIC_ANALYTICS_DOMAIN,
 );
 
-export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
+function subscribe(onChange: () => void) {
+  window.addEventListener(COOKIE_CONSENT_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(COOKIE_CONSENT_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
 
-  useEffect(() => {
-    if (!ANALYTICS_CONFIGURED) return;
-    setVisible(getStoredConsent() === null);
-  }, []);
+function getSnapshot() {
+  return getStoredConsent() === null;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+// Reads whether a choice is still pending via useSyncExternalStore, same
+// reasoning as Analytics.tsx — localStorage is an external store, so this
+// also picks up a choice made in another tab without a page reload.
+export function CookieConsent() {
+  const needsConsent = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const visible = ANALYTICS_CONFIGURED && needsConsent;
 
   if (!visible) return null;
 
   function choose(value: ConsentValue) {
     setStoredConsent(value);
-    setVisible(false);
   }
 
   return (
