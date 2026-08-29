@@ -14,7 +14,11 @@ import {
   Megaphone,
   BarChart3,
   Users,
+  History,
+  ShieldCheck,
 } from "lucide-react";
+
+const ADMIN_ONLY_HREFS = ["/admin/usuarios", "/admin/auditoria"] as const;
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Início", icon: Home },
@@ -27,6 +31,8 @@ const NAV_ITEMS = [
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/aparencia", label: "Aparência", icon: Palette },
   { href: "/admin/usuarios", label: "Usuários", icon: Users },
+  { href: "/admin/auditoria", label: "Auditoria", icon: History },
+  { href: "/admin/seguranca", label: "Segurança", icon: ShieldCheck },
   { href: "/admin/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 
@@ -39,7 +45,9 @@ export function AdminNav({
   role: string;
 }) {
   const pathname = usePathname();
-  const visibleItems = NAV_ITEMS.filter((item) => item.href !== "/admin/usuarios" || role === "admin");
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !ADMIN_ONLY_HREFS.includes(item.href as (typeof ADMIN_ONLY_HREFS)[number]) || role === "admin",
+  );
 
   return (
     <nav className="flex items-center gap-1 overflow-x-auto px-6 py-2">

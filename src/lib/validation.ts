@@ -132,6 +132,14 @@ export const commentSchema = z.object({
     .max(2000, "Comentário muito longo (máx. 2000 caracteres)."),
 });
 
+export const commentReplySchema = z.object({
+  replyBody: z
+    .string()
+    .trim()
+    .min(1, "Escreva uma resposta.")
+    .max(2000, "Resposta muito longa (máx. 2000 caracteres)."),
+});
+
 // Admins can manage other admin accounts and delete any post; editors can
 // only delete posts they authored themselves (see deletePost/deletePosts in
 // src/app/admin/(protected)/posts/actions.ts).

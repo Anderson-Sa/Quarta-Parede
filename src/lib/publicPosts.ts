@@ -10,5 +10,6 @@ export function publicPostWhere(): Prisma.PostWhereInput {
   return {
     published: true,
     publishedAt: { lte: new Date() },
+    deletedAt: null,
   };
 }

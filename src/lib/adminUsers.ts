@@ -38,5 +38,5 @@ export async function verifyAdminCredentials(email: string, password: string) {
   const valid = verifyPassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
   if (!user || !valid) return null;
 
-  return { id: user.id, name: user.name, email: user.email };
+  return { id: user.id, name: user.name, email: user.email, totpSecret: user.totpSecret };
 }

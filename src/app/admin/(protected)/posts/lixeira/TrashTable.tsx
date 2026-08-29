@@ -1,23 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
-import { Trash2, Eye, EyeOff } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { Badge } from "@/components/admin/Badge";
-import { deletePosts, setPostsPublished } from "./actions";
+import { restorePosts, permanentlyDeletePosts } from "../actions";
 
-type PostRow = {
+type TrashRow = {
   id: string;
   title: string;
   category: { name: string };
   author: { name: string } | null;
-  published: boolean;
-  publishedAt: Date | null;
-  createdAt: Date;
+  deletedAt: Date | null;
 };
 
-export function PostsTable({ posts }: { posts: PostRow[] }) {
+export function TrashTable({ posts }: { posts: TrashRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
 
@@ -36,12 +32,11 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
     });
   }
 
-  function bulkDelete() {
+  function restore() {
     if (selected.size === 0) return;
-    if (!confirm(`Mover ${selected.size} post(s) selecionado(s) para a lixeira?`)) return;
     const ids = [...selected];
     startTransition(async () => {
-      const result = await deletePosts(ids);
+      const result = await restorePosts(ids);
       if (result?.error) {
         alert(result.error);
         return;
@@ -50,11 +45,12 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
     });
   }
 
-  function bulkSetPublished(published: boolean) {
+  function permanentlyDelete() {
     if (selected.size === 0) return;
+    if (!confirm(`Excluir definitivamente ${selected.size} post(s)? Esta ação não pode ser desfeita.`)) return;
     const ids = [...selected];
     startTransition(async () => {
-      const result = await setPostsPublished(ids, published);
+      const result = await permanentlyDeletePosts(ids);
       if (result?.error) {
         alert(result.error);
         return;
@@ -72,29 +68,20 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
             <button
               type="button"
               disabled={pending}
-              onClick={() => bulkSetPublished(true)}
+              onClick={restore}
               className="inline-flex items-center gap-1.5 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-foreground/60 transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-50"
             >
-              <Eye className="h-4 w-4" />
-              Publicar
+              <RotateCcw className="h-4 w-4" />
+              Restaurar
             </button>
             <button
               type="button"
               disabled={pending}
-              onClick={() => bulkSetPublished(false)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-foreground/60 transition-colors hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-400 disabled:opacity-50"
-            >
-              <EyeOff className="h-4 w-4" />
-              Despublicar
-            </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={bulkDelete}
+              onClick={permanentlyDelete}
               className="inline-flex items-center gap-1.5 rounded-md border border-surface-border px-3 py-1.5 text-sm font-medium text-foreground/60 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
-              Mover para lixeira
+              Excluir definitivamente
             </button>
           </div>
         </div>
@@ -116,8 +103,7 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
               <th className="px-4 py-3.5 font-semibold">Título</th>
               <th className="px-4 py-3.5 font-semibold">Categoria</th>
               <th className="px-4 py-3.5 font-semibold">Autor</th>
-              <th className="px-4 py-3.5 font-semibold">Status</th>
-              <th className="px-4 py-3.5 font-semibold">Criado em</th>
+              <th className="px-4 py-3.5 font-semibold">Excluído em</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-border">
@@ -132,26 +118,12 @@ export function PostsTable({ posts }: { posts: PostRow[] }) {
                     aria-label={`Selecionar ${post.title}`}
                   />
                 </td>
-                <td className="px-4 py-3.5">
-                  <Link
-                    href={`/admin/posts/${post.id}`}
-                    className="font-medium text-foreground hover:text-brand"
-                  >
-                    {post.title}
-                  </Link>
-                </td>
+                <td className="px-4 py-3.5 font-medium text-foreground">{post.title}</td>
                 <td className="px-4 py-3.5 text-foreground/60">{post.category.name}</td>
                 <td className="px-4 py-3.5 text-foreground/60">{post.author?.name ?? "—"}</td>
-                <td className="px-4 py-3.5">
-                  {post.published && post.publishedAt && post.publishedAt > new Date() ? (
-                    <Badge tone="info">Agendado</Badge>
-                  ) : post.published ? (
-                    <Badge tone="success">Publicado</Badge>
-                  ) : (
-                    <Badge tone="neutral">Rascunho</Badge>
-                  )}
+                <td className="px-4 py-3.5 text-foreground/60">
+                  {post.deletedAt ? formatDate(post.deletedAt) : "—"}
                 </td>
-                <td className="px-4 py-3.5 text-foreground/60">{formatDate(post.createdAt)}</td>
               </tr>
             ))}
           </tbody>

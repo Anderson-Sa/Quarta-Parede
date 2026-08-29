@@ -9,6 +9,7 @@ import { saveUploadedImage } from "@/lib/upload";
 import { blocksToPlainMarkdown, parseContent } from "@/lib/contentBlocks";
 import { getCurrentAdminUser, getCurrentAdminUserId, isAdminSessionValid } from "@/lib/adminSession";
 import { checkRateLimit, formatRetryAfter, getClientIp } from "@/lib/rateLimit";
+import { logAudit } from "@/lib/auditLog";
 
 export type PostFormState = { error?: string } | undefined;
 
@@ -118,6 +119,12 @@ export async function createPost(
   const resolvedTagIds = await resolveTagIds(tagIds);
   const authorId = await getCurrentAdminUserId();
 
+  const resolvedPublishedAt = published ? new Date(publishedAt ?? Date.now()) : null;
+  // "Scheduled" means published with a publish date still in the future —
+  // that's exactly the case the scheduled-posts cron needs to email about
+  // once it arrives (see src/app/api/cron/scheduled-posts).
+  const isScheduled = resolvedPublishedAt !== null && resolvedPublishedAt.getTime() > Date.now();
+
   const post = await prisma.post.create({
     data: {
       title,
@@ -129,12 +136,19 @@ export async function createPost(
       categoryId,
       tags: { connect: resolvedTagIds.map((id) => ({ id })) },
       published,
-      publishedAt: published ? new Date(publishedAt ?? Date.now()) : null,
+      publishedAt: resolvedPublishedAt,
       authorId,
+      notifyOnPublish: isScheduled,
     },
   });
 
   await syncPostSearch(post);
+  await logAudit({
+    action: "post.create",
+    entityType: "Post",
+    entityId: post.id,
+    summary: `Criou o post "${post.title}"`,
+  });
 
   revalidatePath("/admin/posts");
   revalidatePath("/");
@@ -186,6 +200,7 @@ export async function updatePost(
   const nextPublishedAt = published
     ? new Date(publishedAt ?? current.publishedAt ?? Date.now())
     : null;
+  const isScheduled = nextPublishedAt !== null && nextPublishedAt.getTime() > Date.now();
 
   // Snapshot the previous content before overwriting, so it can be restored
   // later. Only meaningful fields (title/excerpt/content) are versioned.
@@ -223,10 +238,18 @@ export async function updatePost(
       tags: { set: resolvedTagIds.map((id) => ({ id })) },
       published,
       publishedAt: nextPublishedAt,
+      notifyOnPublish: isScheduled,
+      ...(isScheduled ? { scheduledNotifiedAt: null } : {}),
     },
   });
 
   await syncPostSearch({ id, title, excerpt, content });
+  await logAudit({
+    action: "post.update",
+    entityType: "Post",
+    entityId: id,
+    summary: `Editou o post "${title}"`,
+  });
 
   revalidatePath("/admin/posts");
   revalidatePath("/");
@@ -234,20 +257,29 @@ export async function updatePost(
   return undefined;
 }
 
+/** Soft-deletes: moves the post to the trash (/admin/posts/lixeira) instead
+ * of removing it outright, so an accidental deletion can be undone. */
 export async function deletePost(id: string): Promise<{ error?: string } | undefined> {
   const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
   if (rateLimitError) return { error: rateLimitError };
 
   const currentUser = await getCurrentAdminUser();
-  const target = await prisma.post.findUnique({ where: { id }, select: { authorId: true } });
+  const target = await prisma.post.findUnique({ where: { id }, select: { authorId: true, title: true } });
   if (!target) return { error: "Post não encontrado." };
   if (currentUser?.role !== "admin" && target.authorId !== currentUser?.id) {
     return { error: "Você só pode excluir posts que você criou." };
   }
 
-  const post = await prisma.post.delete({ where: { id } });
+  const post = await prisma.post.update({ where: { id }, data: { deletedAt: new Date() } });
   await removePostSearch(id);
+  await logAudit({
+    action: "post.trash",
+    entityType: "Post",
+    entityId: id,
+    summary: `Moveu o post "${target.title}" para a lixeira`,
+  });
   revalidatePath("/admin/posts");
+  revalidatePath("/admin/posts/lixeira");
   revalidatePath("/");
   revalidatePath(`/post/${post.slug}`);
   return undefined;
@@ -268,8 +300,92 @@ export async function deletePosts(ids: string[]): Promise<{ error?: string } | u
     return { error: "Você só pode excluir posts que você criou." };
   }
 
-  await prisma.post.deleteMany({ where: { id: { in: ids } } });
+  await prisma.post.updateMany({ where: { id: { in: ids } }, data: { deletedAt: new Date() } });
   await Promise.all(posts.map((post) => removePostSearch(post.id)));
+  revalidatePath("/admin/posts");
+  revalidatePath("/admin/posts/lixeira");
+  revalidatePath("/");
+  for (const post of posts) revalidatePath(`/post/${post.slug}`);
+  return undefined;
+}
+
+/** Restores a post from the trash. Re-syncs PostSearch since removePostSearch
+ * dropped its row when the post was trashed. */
+export async function restorePosts(ids: string[]): Promise<{ error?: string } | undefined> {
+  if (ids.length === 0) return undefined;
+
+  const posts = await prisma.post.findMany({ where: { id: { in: ids } } });
+  await prisma.post.updateMany({ where: { id: { in: ids } }, data: { deletedAt: null } });
+  await Promise.all(posts.map((post) => syncPostSearch(post)));
+  for (const post of posts) {
+    await logAudit({
+      action: "post.restore",
+      entityType: "Post",
+      entityId: post.id,
+      summary: `Restaurou o post "${post.title}" da lixeira`,
+    });
+  }
+  revalidatePath("/admin/posts");
+  revalidatePath("/admin/posts/lixeira");
+  revalidatePath("/");
+  return undefined;
+}
+
+/** Permanently deletes trashed posts. Admin-only — the trash is the last
+ * safety net, so only admins can empty it. */
+export async function permanentlyDeletePosts(ids: string[]): Promise<{ error?: string } | undefined> {
+  if (ids.length === 0) return undefined;
+
+  const currentUser = await getCurrentAdminUser();
+  if (currentUser?.role !== "admin") {
+    return { error: "Apenas administradores podem excluir posts definitivamente." };
+  }
+
+  const posts = await prisma.post.findMany({
+    where: { id: { in: ids }, deletedAt: { not: null } },
+    select: { id: true, title: true },
+  });
+  await prisma.post.deleteMany({ where: { id: { in: ids }, deletedAt: { not: null } } });
+  for (const post of posts) {
+    await logAudit({
+      action: "post.delete_permanent",
+      entityType: "Post",
+      entityId: post.id,
+      summary: `Excluiu definitivamente o post "${post.title}"`,
+    });
+  }
+  revalidatePath("/admin/posts/lixeira");
+  return undefined;
+}
+
+/** Bulk publish/unpublish, used from the posts listing's selection toolbar. */
+export async function setPostsPublished(
+  ids: string[],
+  published: boolean,
+): Promise<{ error?: string } | undefined> {
+  if (ids.length === 0) return undefined;
+
+  const rateLimitError = await checkAdminRateLimit("post-write", WRITE_MAX_ATTEMPTS, WRITE_WINDOW_MS);
+  if (rateLimitError) return { error: rateLimitError };
+
+  const posts = await prisma.post.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, slug: true, publishedAt: true },
+  });
+
+  await prisma.post.updateMany({
+    where: { id: { in: ids } },
+    data: published
+      ? { published: true, publishedAt: new Date(), notifyOnPublish: false }
+      : { published: false },
+  });
+
+  await logAudit({
+    action: published ? "post.bulk_publish" : "post.bulk_unpublish",
+    entityType: "Post",
+    summary: `${published ? "Publicou" : "Despublicou"} ${posts.length} post(s) em lote`,
+  });
+
   revalidatePath("/admin/posts");
   revalidatePath("/");
   for (const post of posts) revalidatePath(`/post/${post.slug}`);

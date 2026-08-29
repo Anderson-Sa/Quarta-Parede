@@ -72,7 +72,7 @@ describe("verifyAdminCredentials", () => {
     createdUserIds.push(user.id);
 
     const result = await verifyAdminCredentials(email, "correct-password");
-    expect(result).toEqual({ id: user.id, name: "Verify Test", email });
+    expect(result).toEqual({ id: user.id, name: "Verify Test", email, totpSecret: null });
   });
 
   it("is case-insensitive on e-mail", async () => {

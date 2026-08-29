@@ -67,7 +67,11 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
     category: true,
     tags: true,
     author: { select: { id: true, name: true } },
-    comments: { where: { approved: true }, orderBy: { createdAt: "desc" } },
+    comments: {
+      where: { approved: true },
+      orderBy: { createdAt: "desc" },
+      include: { repliedBy: { select: { name: true } } },
+    },
   } as const;
 
   let post = await prisma.post.findFirst({ where: { slug, ...publicPostWhere() }, include });
@@ -272,6 +276,16 @@ export default async function PostPage({ params }: PageProps<"/post/[slug]">) {
                 <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/80">
                   {comment.body}
                 </p>
+                {comment.replyBody && (
+                  <div className="mt-3 rounded-md border border-brand/20 bg-brand/5 p-3">
+                    <span className="text-xs font-bold uppercase tracking-wide text-brand">
+                      Resposta da {comment.repliedBy ? comment.repliedBy.name : "equipe editorial"}
+                    </span>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground/80">
+                      {comment.replyBody}
+                    </p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

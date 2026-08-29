@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { Pagination } from "@/components/Pagination";
@@ -23,7 +23,7 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
   const status = firstValue(params.status) ?? "";
   const authorId = firstValue(params.author) ?? "";
 
-  const where: Prisma.PostWhereInput = {};
+  const where: Prisma.PostWhereInput = { deletedAt: null };
   if (q) where.title = { contains: q };
   if (categoryId) where.categoryId = categoryId;
   if (authorId) where.authorId = authorId;
@@ -67,13 +67,22 @@ export default async function PostsPage({ searchParams }: PageProps<"/admin/post
       <PageHeader
         title="Posts"
         actions={
-          <Link
-            href="/admin/posts/novo"
-            className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
-          >
-            <Plus className="h-4 w-4" />
-            Novo post
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/posts/lixeira"
+              className="inline-flex items-center gap-2 rounded-md border border-surface-border px-4 py-2 text-sm font-medium text-foreground/60 transition-colors hover:text-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+              Lixeira
+            </Link>
+            <Link
+              href="/admin/posts/novo"
+              className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+            >
+              <Plus className="h-4 w-4" />
+              Novo post
+            </Link>
+          </div>
         }
       />
 

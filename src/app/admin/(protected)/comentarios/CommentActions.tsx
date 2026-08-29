@@ -1,10 +1,20 @@
 "use client";
 
 import { useTransition } from "react";
-import { Check, Trash2 } from "lucide-react";
+import { Check, MessageSquareReply, Trash2 } from "lucide-react";
 import { approveComment, deleteComment } from "./actions";
 
-export function CommentActions({ id, approved }: { id: string; approved: boolean }) {
+export function CommentActions({
+  id,
+  approved,
+  replying,
+  onToggleReply,
+}: {
+  id: string;
+  approved: boolean;
+  replying: boolean;
+  onToggleReply: () => void;
+}) {
   const [pending, startTransition] = useTransition();
 
   return (
@@ -20,6 +30,16 @@ export function CommentActions({ id, approved }: { id: string; approved: boolean
           <Check className="h-4 w-4" />
         </button>
       )}
+      <button
+        type="button"
+        onClick={onToggleReply}
+        className={`inline-flex items-center rounded-md p-1.5 transition-colors hover:bg-brand/10 hover:text-brand ${
+          replying ? "bg-brand/10 text-brand" : "text-foreground/40"
+        }`}
+        aria-label="Responder comentário"
+      >
+        <MessageSquareReply className="h-4 w-4" />
+      </button>
       <button
         type="button"
         disabled={pending}

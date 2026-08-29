@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, X } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/admin/Badge";
 import { CommentActions } from "./CommentActions";
-import { approveComments, deleteComments } from "./actions";
+import { CommentReplyForm } from "./CommentReplyForm";
+import { approveComments, deleteComments, removeCommentReply } from "./actions";
 
 type CommentRow = {
   id: string;
@@ -15,10 +16,14 @@ type CommentRow = {
   createdAt: Date;
   post: { title: string };
   moderatedBy: { name: string } | null;
+  replyBody: string | null;
+  repliedBy: { name: string } | null;
+  repliedAt: Date | null;
 };
 
 export function CommentsTable({ comments }: { comments: CommentRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [replyingId, setReplyingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const allSelected = comments.length > 0 && selected.size === comments.length;
@@ -120,7 +125,37 @@ export function CommentsTable({ comments }: { comments: CommentRow[] }) {
                   {comment.post.title}
                 </td>
                 <td className="px-4 py-3.5 text-foreground/60">{comment.authorName}</td>
-                <td className="max-w-xs px-4 py-3.5 text-foreground/80">{comment.body}</td>
+                <td className="max-w-xs px-4 py-3.5 text-foreground/80">
+                  <p>{comment.body}</p>
+                  {comment.replyBody && replyingId !== comment.id && (
+                    <div className="mt-2 rounded-md border border-brand/20 bg-brand/5 p-2 text-xs text-foreground/70">
+                      <p className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-brand">
+                          Resposta da equipe{comment.repliedBy ? ` (${comment.repliedBy.name})` : ""}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => startTransition(() => removeCommentReply(comment.id))}
+                          disabled={pending}
+                          className="text-foreground/40 hover:text-red-400 disabled:opacity-50"
+                          aria-label="Remover resposta"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </p>
+                      <p className="mt-1">{comment.replyBody}</p>
+                    </div>
+                  )}
+                  {replyingId === comment.id && (
+                    <div className="mt-2">
+                      <CommentReplyForm
+                        id={comment.id}
+                        initialBody={comment.replyBody ?? undefined}
+                        onDone={() => setReplyingId(null)}
+                      />
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3.5">
                   {comment.approved ? (
                     <Badge tone="success">Aprovado</Badge>
@@ -133,7 +168,12 @@ export function CommentsTable({ comments }: { comments: CommentRow[] }) {
                 </td>
                 <td className="px-4 py-3.5 text-foreground/60">{formatDate(comment.createdAt)}</td>
                 <td className="px-4 py-3.5">
-                  <CommentActions id={comment.id} approved={comment.approved} />
+                  <CommentActions
+                    id={comment.id}
+                    approved={comment.approved}
+                    replying={replyingId === comment.id}
+                    onToggleReply={() => setReplyingId(replyingId === comment.id ? null : comment.id)}
+                  />
                 </td>
               </tr>
             ))}

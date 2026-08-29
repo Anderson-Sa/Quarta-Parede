@@ -14,7 +14,7 @@ export function DeletePostButton({ id }: { id: string }) {
       type="button"
       disabled={pending}
       onClick={() => {
-        if (!confirm("Excluir este post?")) return;
+        if (!confirm("Mover este post para a lixeira?")) return;
         startTransition(async () => {
           const result = await deletePost(id);
           if (result?.error) {

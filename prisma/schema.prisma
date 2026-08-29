@@ -81,6 +81,18 @@ model Post {
   author         AdminUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  // Soft-delete: set instead of removing the row outright, so a post can be
+  // restored from the admin trash (src/app/admin/(protected)/posts/lixeira).
+  // Excluded from all public queries (see publicPostWhere) and from the
+  // default admin listing.
+  deletedAt      DateTime?
+  // True when this post was published with a future publishedAt (i.e. it was
+  // scheduled rather than published immediately). Lets the scheduled-posts
+  // cron (src/app/api/cron/scheduled-posts) find exactly the posts that still
+  // need a "your post just went live" email, without re-notifying posts that
+  // were simply published right away.
+  notifyOnPublish     Boolean   @default(false)
+  scheduledNotifiedAt DateTime?
 }
 
 // Day-bucketed view counter, separate from Post.views (a simple running
@@ -111,8 +123,16 @@ model Comment {
   // src/app/admin/(protected)/comentarios/actions.ts). Nullable: unapproved
   // comments have no moderator yet, and the account can later be deleted.
   moderatedById String?
-  moderatedBy   AdminUser? @relation(fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderatedBy   AdminUser? @relation("CommentModeration", fields: [moderatedById], references: [id], onDelete: SetNull)
   moderatedAt   DateTime?
+  // A single public reply from the editorial team (see replyToComment in
+  // src/app/admin/(protected)/comentarios/actions.ts). Deliberately not a
+  // full thread — one attributed reply per comment is enough for "the site
+  // responded to this" without building general-purpose nested comments.
+  replyBody   String?
+  repliedById String?
+  repliedBy   AdminUser? @relation("CommentReplies", fields: [repliedById], references: [id], onDelete: SetNull)
+  repliedAt   DateTime?
 }
 
 model Subscriber {
@@ -137,9 +157,36 @@ model AdminUser {
   // posts they authored themselves.
   role         String   @default("editor")
   createdAt    DateTime @default(now())
+  // TOTP two-factor auth (src/lib/totp.ts). totpSecret is base32-encoded and
+  // only ever set/cleared via enableTotp/disableTotp in
+  // src/app/admin/(protected)/usuarios/actions.ts — never exposed once
+  // confirmed. Null means 2FA is off for this account.
+  totpSecret    String?
+  totpEnabledAt DateTime?
   posts             Post[]
   revisions         PostRevision[]
-  moderatedComments Comment[]
+  moderatedComments Comment[] @relation("CommentModeration")
+  repliedComments   Comment[] @relation("CommentReplies")
+  auditLogs         AuditLog[]
+}
+
+// Append-only trail of admin actions (src/lib/auditLog.ts), viewable at
+// /admin/auditoria. actorName/actorEmail are denormalized snapshots taken at
+// write time so the log stays meaningful even after an AdminUser account is
+// deleted (adminUserId then becomes null via onDelete: SetNull).
+model AuditLog {
+  id          String     @id @default(cuid())
+  adminUserId String?
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+  actorName   String
+  action      String
+  entityType  String
+  entityId    String?
+  summary     String
+  createdAt   DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([adminUserId])
 }
 
 model RateLimitBucket {

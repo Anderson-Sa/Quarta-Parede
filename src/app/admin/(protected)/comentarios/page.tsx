@@ -10,6 +10,7 @@ export default async function ComentariosPage() {
     include: {
       post: { select: { title: true, slug: true } },
       moderatedBy: { select: { name: true } },
+      repliedBy: { select: { name: true } },
     },
   });
 

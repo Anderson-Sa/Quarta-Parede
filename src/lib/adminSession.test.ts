@@ -16,8 +16,11 @@ vi.mock("next/headers", () => ({
 
 import {
   createAdminSession,
+  createPendingTotpSession,
   destroyAdminSession,
+  destroyPendingTotpSession,
   getCurrentAdminUserId,
+  getPendingTotpUserId,
   isAdminSessionValid,
 } from "./adminSession";
 
@@ -85,5 +88,36 @@ describe("admin session lifecycle", () => {
   it("rejects a malformed token", async () => {
     store.set("admin_session", { value: "not-a-valid-token" });
     expect(await isAdminSessionValid()).toBe(false);
+  });
+});
+
+describe("pending TOTP session", () => {
+  it("has no pending user id before a pending session is created", async () => {
+    expect(await getPendingTotpUserId()).toBe(null);
+  });
+
+  it("remembers which user a pending session was created for", async () => {
+    await createPendingTotpSession(testUserId);
+    expect(await getPendingTotpUserId()).toBe(testUserId);
+  });
+
+  it("does not grant a real admin session on its own", async () => {
+    await createPendingTotpSession(testUserId);
+    expect(await isAdminSessionValid()).toBe(false);
+  });
+
+  it("is cleared after destroying it", async () => {
+    await createPendingTotpSession(testUserId);
+    await destroyPendingTotpSession();
+    expect(await getPendingTotpUserId()).toBe(null);
+  });
+
+  it("rejects a tampered pending token", async () => {
+    await createPendingTotpSession(testUserId);
+    const cookie = store.get("admin_pending_totp");
+    if (!cookie) throw new Error("expected a pending session cookie to be set");
+    const tamperedSignature = cookie.value.slice(0, -1) + (cookie.value.endsWith("0") ? "1" : "0");
+    store.set("admin_pending_totp", { value: tamperedSignature });
+    expect(await getPendingTotpUserId()).toBe(null);
   });
 });

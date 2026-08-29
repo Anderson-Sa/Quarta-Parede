@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 const COOKIE_NAME = "admin_session";
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Short-lived cookie issued after a correct password but before the TOTP
+// step, for accounts with 2FA enabled (see src/lib/totp.ts). Kept separate
+// from COOKIE_NAME so a pending 2FA challenge never grants real access on
+// its own — only createAdminSession (called after a valid TOTP code) does.
+const PENDING_TOTP_COOKIE_NAME = "admin_pending_totp";
+const PENDING_TOTP_DURATION_MS = 5 * 60 * 1000;
+
 function getSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) {
@@ -91,4 +98,30 @@ export async function getCurrentAdminUser() {
 
 export async function isAdminSessionValid() {
   return (await getCurrentAdminUser()) !== null;
+}
+
+export async function createPendingTotpSession(userId: string) {
+  const expiresAt = Date.now() + PENDING_TOTP_DURATION_MS;
+  const token = buildToken(userId, expiresAt);
+  const cookieStore = await cookies();
+  cookieStore.set(PENDING_TOTP_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: new Date(expiresAt),
+  });
+}
+
+export async function destroyPendingTotpSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_TOTP_COOKIE_NAME);
+}
+
+/** Returns the user id awaiting a TOTP code, or null if there's no valid pending challenge. */
+export async function getPendingTotpUserId() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(PENDING_TOTP_COOKIE_NAME)?.value;
+  if (!token) return null;
+  return parseToken(token)?.userId ?? null;
 }
