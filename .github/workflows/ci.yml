@@ -65,6 +65,9 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
+      - name: Seed database
+        run: npm run db:seed
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
